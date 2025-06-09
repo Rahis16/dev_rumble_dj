@@ -20,10 +20,12 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod
+from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table
 from decimal import Decimal
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
+from django.db import transaction
+from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
 
@@ -234,10 +236,20 @@ def cart_remove(request):
 #     return Response({"status": "success", "order": serializer.data}, status=status.HTTP_201_CREATED)
 
 
-from django.db import transaction
-from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Payment, PaymentMethod, Wallet, Order, Cart, CartItem, OrderItem
-from .serializers import OrderSerializer
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def fetch_tables(request):
+    tables = Table.objects.all()
+    table_data = []
+    for table in tables:
+        table_data.append({
+            "id": table.id,
+            "number": table.number,
+            "capacity": table.capacity,
+            "is_occupied": table.is_occupied
+        })
+    return Response(table_data, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -248,9 +260,23 @@ def checkout(request):
     amount = request.data.get("amount")
     screenshot = request.FILES.get("screenshot")
     remarks = request.data.get("remarks", "")
+    table_id = request.data.get("table_id")
 
     if not payment_method or not amount:
         return Response({"error": "Payment method and amount are required."}, status=400)
+    
+    if not table_id:
+        return Response({"error": "Please Select a Table."}, status=400)
+    
+    table = None
+    if table_id:
+        try:
+            table = Table.objects.get(id=table_id)
+        except Table.DoesNotExist:
+            return Response({"error": "Table not found."}, status=404)    
+        
+        if table.is_occupied:
+            return Response({"error": "Table is already occupied."}, status=400)
 
     try:
         method = PaymentMethod.objects.get(name=payment_method.lower())
@@ -275,6 +301,7 @@ def checkout(request):
         # Step 1: Create Order
         order = Order.objects.create(
             user=user,
+            table=table,
             total_price=total_price,
             status='pending',
         )

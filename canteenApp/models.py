@@ -95,6 +95,22 @@ class CartItem(models.Model):
         ordering = ['product__name']
 
 
+
+class Table(models.Model):
+    number = models.IntegerField(unique=True)
+    capacity = models.IntegerField(default=4)
+    is_occupied = models.BooleanField(default=False)  # Auto-update based on active orders
+
+    def __str__(self):
+        return f"Table {self.number}"
+
+    def update_occupancy(self):
+        # Count only 'preparing' orders for this table
+        active_orders = self.orders.filter(status="preparing").count()
+        self.is_occupied = active_orders >= self.capacity
+        self.save()
+        
+
 # Order model (user, status, total, timestamp)
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -123,6 +139,7 @@ class Order(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     preparing_at = models.DateTimeField(null=True, blank=True)
     prepare_duration = models.IntegerField(choices=PREPARE_DURATION_CHOICES, default=10)
+    table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True, related_name="orders")
 
     def __str__(self):
         return f"Order #{self.pk} by {self.user.username}"
@@ -135,6 +152,9 @@ class Order(models.Model):
         # Set preparing_at when status is changed to 'preparing'
         if self.status == 'preparing' and not self.preparing_at:
             self.preparing_at = timezone.now()
+            
+        if self.table:
+            self.table.update_occupancy()    
 
         super().save(*args, **kwargs)
 

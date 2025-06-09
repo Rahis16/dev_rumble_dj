@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table
 
 
 @admin.register(UserProfile)
@@ -116,4 +116,16 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 
     # def has_add_permission(self, request):
     #     # Payment methods are predefined, not added via admin
-    #     return False    
+    #     return False  
+    
+    
+@admin.register(Table)
+class TableAdmin(admin.ModelAdmin):
+    list_display = ('number', 'capacity', 'is_occupied', 'occupied_seats')
+    list_editable = ('capacity',)
+    list_filter = ('is_occupied',)
+    search_fields = ('number',)
+
+    def occupied_seats(self, obj):
+        return obj.orders.filter(status='preparing').count()
+    occupied_seats.short_description = 'Occupied Seats'      

@@ -30,4 +30,6 @@ urlpatterns = [
     path('api/pay/wallet/', pay_with_wallet),
     path('api/pay/qr/', pay_with_qr),
     path('api/pay/counter/', pay_on_counter),
+    
+    path('fetch-tables/', views.fetch_tables, name='fetch-tables'),
 ]

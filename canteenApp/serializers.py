@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, CartItem, Order, OrderItem, UserProfile
+from .models import Product, Category, CartItem, Order, OrderItem, UserProfile, Payment
 from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
@@ -64,4 +64,50 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'ordered_at', 'status', 'confirmed_at', 'preparing_at', 'prepare_duration', 'total_price', 'items']    
+        fields = ['id', 'user', 'ordered_at', 'status', 'confirmed_at', 'preparing_at', 'prepare_duration', 'total_price', 'items']  
+        
+        
+        
+
+#used in getting sigle order details in admin view
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['id', 'method', 'amount', 'screenshot', 'remarks', 'paid_at', 'status']
+        
+    def get_screenshot(self, obj):
+        request = self.context.get('request')
+        if obj.screenshot and request:
+            return request.build_absolute_uri(obj.screenshot.url)
+        elif obj.screenshot:
+            return obj.screenshot.url
+        return None    
+        
+class OrderItemSerializer2(serializers.ModelSerializer):
+    product_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product_name', 'quantity', 'price']
+
+    def get_product_name(self, obj):
+        return obj.product.name if obj.product else "Deleted Product"
+    
+
+#used in getting sigle order details in admin view
+class OrderSerializer2(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    items = OrderItemSerializer(many=True, read_only=True)
+    table_number = serializers.SerializerMethodField()
+    payment = PaymentSerializer(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'user', 'status', 'total_price', 'ordered_at', 
+            'confirmed_at', 'preparing_at', 'prepare_duration',
+            'table_number', 'items', 'payment'
+        ]
+
+    def get_table_number(self, obj):
+        return obj.table.number if obj.table else None          

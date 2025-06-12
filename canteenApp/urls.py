@@ -3,6 +3,7 @@ from . import views
 from .import auth_views
 from .auth_views import CookieLoginView, CookieLogoutView
 from .payment_views import pay_with_wallet, pay_with_qr, pay_on_counter
+from . import admin_views 
 
 urlpatterns = [
     path('', views.home, name="home"),
@@ -15,6 +16,7 @@ urlpatterns = [
     
     
     path("api/get-profile/", views.get_user_profile, name="get-user-profile"),
+    path("api/get-wallet/", views.fetch_wallet, name="get-user-wallet"),
     path('api/edit-profile/', views.edit_user_profile, name='edit_profile'),
     path('api/products/', views.ProductListCreateView.as_view(), name='product-list-create'),
     path('api/categories/', views.CategoryListCreateView.as_view(), name='category-list-create'),
@@ -32,4 +34,12 @@ urlpatterns = [
     path('api/pay/counter/', pay_on_counter),
     
     path('fetch-tables/', views.fetch_tables, name='fetch-tables'),
+    
+    
+    path('api/admin/orders/', admin_views.fetch_all_orders, name='fetch_all_orders'),
+    path('api/admin/orders/<int:order_id>/', admin_views.fetch_single_order, name='fetch_single_order'),
+    path('api/admin/orders/<int:order_id>/update-payment-status/', admin_views.update_payment_status, name='update_payment_status'),
+    path('api/admin/orders/<int:order_id>/update-status/', admin_views.update_order_status, name='update_order_status'),
+
 ]
+    

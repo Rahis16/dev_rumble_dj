@@ -20,18 +20,22 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table
+from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, Wallet, TransactionHistory
 from decimal import Decimal
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.paginator import Paginator
+from django.utils.timezone import localtime
+
 
 User = get_user_model()
 
 def home(request):
     return HttpResponse("home page")
 
+#edit-user-profile
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def edit_user_profile(request):
@@ -57,7 +61,7 @@ def edit_user_profile(request):
     }, status=status.HTTP_400_BAD_REQUEST)
 
 
-
+#fetch-user-profile
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_user_profile(request):
@@ -66,19 +70,82 @@ def get_user_profile(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+#fetch-wallet
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def fetch_wallet(request):
+    try:
+        # Get the wallet for the authenticated user
+        wallet = Wallet.objects.get(user=request.user)
+        
+        # Fetch all transactions ordered by latest
+        all_transactions = wallet.transactions.all().order_by('-created_at')
+
+        # Pagination setup
+        page_number = request.GET.get('page', 1)
+        paginator = Paginator(all_transactions, 2)  # 30 per page
+
+        try:
+            transactions = paginator.page(page_number)
+        except Exception:
+            return Response({"error": "Invalid page number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Manually serialize paginated transactions
+        transaction_data = [
+            {
+                "id": tx.id,
+                "title": tx.title,
+                "desc": tx.desc,
+                "amount": str(tx.amount),
+                "type": tx.type,
+                "created_at": localtime(tx.created_at).strftime("%Y-%m-%d %I:%M %p")
+            }
+            for tx in transactions
+        ]
+
+        # Wallet info + paginated transactions
+        wallet_data = {
+            "id": wallet.id,
+            "user_id": wallet.user.id,
+            "username": wallet.user.username,
+            "balance": str(wallet.balance),
+            "transactions": transaction_data,
+            "pagination": {
+                "total": paginator.count,
+                "per_page": 2,
+                "current_page": transactions.number,
+                "total_pages": paginator.num_pages,
+                "has_next": transactions.has_next(),
+                "has_previous": transactions.has_previous(),
+            }
+        }
+
+        return Response(wallet_data, status=status.HTTP_200_OK)
+
+    except Wallet.DoesNotExist:
+        return Response(
+            {"error": "Wallet not found for this user"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    
+#fetch-categories
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
 
+#fetch-products
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all().order_by('created_at')
     serializer_class = ProductSerializer
+
 
 class ProductRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     
 
+#add-to-cart
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_to_cart(request):
@@ -124,6 +191,7 @@ def add_to_cart(request):
     }, status=status.HTTP_201_CREATED)
 
 
+#fetch-cart-items
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def fetch_cart_items(request):
@@ -138,6 +206,7 @@ def fetch_cart_items(request):
 
 
 
+#update-cart-item
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def cart_update(request):
@@ -172,6 +241,7 @@ def cart_update(request):
 
 
 
+#remove-cart-item
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def cart_remove(request):
@@ -236,21 +306,27 @@ def cart_remove(request):
 #     return Response({"status": "success", "order": serializer.data}, status=status.HTTP_201_CREATED)
 
 
+#fetch-tables
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def fetch_tables(request):
     tables = Table.objects.all()
     table_data = []
     for table in tables:
+        available_seats = table.capacity - table.orders.filter(status="pending").count()
+        if available_seats < 0:
+            available_seats = 0
         table_data.append({
             "id": table.id,
             "number": table.number,
             "capacity": table.capacity,
-            "is_occupied": table.is_occupied
+            "is_occupied": table.is_occupied,
+            "available_seats": available_seats
         })
     return Response(table_data, status=status.HTTP_200_OK)
 
 
+#checkout
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])  # To handle QR screenshot upload
@@ -333,6 +409,16 @@ def checkout(request):
                 status='paid',
                 remarks=remarks,
             )
+            
+            purchase_items = ", ".join([f"{item.quantity}x {item.product.name}" for item in order.items.all()])    
+            
+            TransactionHistory.objects.create(
+                    wallet=request.user.wallet,
+                    title="Order Payment",
+                    desc=f"Deducted {amount} for order of {purchase_items}",
+                    amount=amount,
+                    type="debit"
+                )
 
         elif method.name == "qr":
             if not screenshot:
@@ -368,6 +454,7 @@ def checkout(request):
 
 
 
+#users_orders
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_orders_view(request):

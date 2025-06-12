@@ -25,7 +25,25 @@ class Wallet(models.Model):
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
-        return f"{self.user.username}'s Wallet"    
+        return f"{self.user.username}'s Wallet"  
+    
+    
+class TransactionHistory(models.Model):
+    TRANSACTION_TYPES = (
+        ('credit', 'Credit'),  # Money added
+        ('debit', 'Debit'),    # Money deducted
+    )
+
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    title = models.CharField(max_length=255)
+    desc = models.TextField()  # Optional detailed description
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        direction = '+' if self.type == 'credit' else '-'
+        return f"{self.wallet.user.username} {direction}${self.amount} - {self.title} on {self.created_at.strftime('%Y-%m-%d')}"      
 
 
 
@@ -106,8 +124,8 @@ class Table(models.Model):
 
     def update_occupancy(self):
         # Count only 'preparing' orders for this table
-        active_orders = self.orders.filter(status="preparing").count()
-        self.is_occupied = active_orders >= self.capacity
+        active_orders = self.orders.filter(status="pending").count()
+        self.is_occupied = active_orders >= self.capacity - 1
         self.save()
         
 
@@ -200,7 +218,7 @@ class Payment(models.Model):
     status = models.CharField(max_length=20, choices=[
         ("pending", "Pending"),
         ("paid", "Paid"),
-        ("failed", "Failed"),
+        ("fake", "Fake Payment"),
     ], default="pending")
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 

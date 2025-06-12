@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory
 
 
 @admin.register(UserProfile)
@@ -97,6 +97,18 @@ class WalletAdmin(admin.ModelAdmin):
 
     # def has_add_permission(self, request):
     #     # Wallets are created automatically, not via admin
+    #     return False    
+    
+    
+@admin.register(TransactionHistory)
+class TransactionHistoryAdmin(admin.ModelAdmin):
+    list_display = ('wallet', 'type', 'amount', 'created_at')
+    search_fields = ('wallet__user__username', 'type')
+    list_filter = ('type',)
+    ordering = ('-created_at',)
+
+    # def has_add_permission(self, request):
+    #     # Transaction history is managed automatically, not via admin
     #     return False    
 
 

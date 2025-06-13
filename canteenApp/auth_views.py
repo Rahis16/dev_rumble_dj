@@ -54,14 +54,12 @@ class CookieLogoutView(LogoutView):
 
 
 class AuthStatusView(APIView):
-    permission_classes = []  # We'll handle auth manually
+    permission_classes = []
 
     def get(self, request):
         access_token = request.COOKIES.get('access_token')
-        refresh_token = request.COOKIES.get('refresh_token')
 
         try:
-            # Try validating access token
             token = AccessToken(access_token)
             user_id = token['user_id']
             user = User.objects.get(id=user_id)
@@ -77,38 +75,34 @@ class AuthStatusView(APIView):
             })
 
         except Exception:
-            # Access token is expired or invalid
-            if not refresh_token:
-                return Response({'authenticated': False}, status=401)
+            return Response({'authenticated': False}, status=401)
 
-            try:
-                refresh = RefreshToken(refresh_token)
-                user_id = refresh['user_id']
-                user = User.objects.get(id=user_id)
 
-                # Generate new access token
-                new_access_token = str(refresh.access_token)
 
-                response = Response({
-                    "authenticated": True,
-                    "username": user.username,
-                    "is_staff": user.is_staff,
-                    "is_superuser": user.is_superuser,
-                    "email": user.email,
-                    "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
-                    "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
-                })
+class RefreshTokenView(APIView):
+    permission_classes = []
 
-                # Set new access token cookie
-                response.set_cookie(
-                    key='access_token',
-                    value=new_access_token,
-                    httponly=True,
-                    secure=True,
-                    samesite='None',
-                    max_age=60 * 15  # 15 minutes
-                )
-                return response
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({'detail': 'Refresh token missing'}, status=401)
 
-            except TokenError:
-                return Response({'authenticated': False}, status=401)
+        try:
+            refresh = RefreshToken(refresh_token)
+            user_id = refresh['user_id']
+            user = User.objects.get(id=user_id)
+            access_token = str(refresh.access_token)
+
+            response = Response({'message': 'Token refreshed'})
+            response.set_cookie(
+                key='access_token',
+                value=access_token,
+                httponly=True,
+                secure=True,
+                samesite='Lax',
+                max_age=60 * 15
+            )
+            return response
+
+        except TokenError:
+            return Response({'detail': 'Invalid refresh token'}, status=401)

@@ -23,8 +23,20 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
-    
-    
+
+#product serializer for admin view
+class ProductSerializerAdmin(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'desc', 'price', 'image', 'category', 'is_active',
+            'is_featured', 'created_at', 'category_name'
+        ]
+
+
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     product_image = serializers.SerializerMethodField()

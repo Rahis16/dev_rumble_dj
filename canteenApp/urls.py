@@ -13,8 +13,9 @@ urlpatterns = [
     path('auth/logout/', CookieLogoutView.as_view(), name='rest_logout'),
     path('auth/', include('dj_rest_auth.registration.urls')),  # Signup
     path('auth/status/', auth_views.AuthStatusView.as_view(), name='auth-status'),
-    
-    
+    path('token/refresh/', auth_views.RefreshTokenView.as_view(), name='token-refresh'),
+
+
     path("api/get-profile/", views.get_user_profile, name="get-user-profile"),
     path("api/get-wallet/", views.fetch_wallet, name="get-user-wallet"),
     path('api/edit-profile/', views.edit_user_profile, name='edit_profile'),
@@ -40,6 +41,8 @@ urlpatterns = [
     path('api/admin/orders/<int:order_id>/', admin_views.fetch_single_order, name='fetch_single_order'),
     path('api/admin/orders/<int:order_id>/update-payment-status/', admin_views.update_payment_status, name='update_payment_status'),
     path('api/admin/orders/<int:order_id>/update-status/', admin_views.update_order_status, name='update_order_status'),
+    path('api/admin/products/', admin_views.AdminProductListCreateView.as_view(), name='admin-product-list-create'),
+    path('api/admin/products/<int:pk>/', admin_views.AdminProductRetrieveUpdateView.as_view(), name='admin-product-detail-update'),
 
 ]
-    
+     

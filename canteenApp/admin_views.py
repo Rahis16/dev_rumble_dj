@@ -8,8 +8,12 @@ from django.utils.dateparse import parse_date
 from django.http import HttpResponse
 from django.db.models import Q
 import csv
-from .models import Order, Payment
-from .serializers import OrderSerializer2
+from .models import Order, Payment, Product
+from .serializers import OrderSerializer2, ProductSerializerAdmin
+from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.paginator import Paginator
 
 
 @api_view(['GET'])
@@ -128,4 +132,66 @@ def update_order_status(request, order_id):
         }, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)    
+        return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)   
+    
+    
+    
+    
+    
+#CRU on products and categories
+class AdminProductListCreateView(APIView):
+    permission_classes = [IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        # ✅ Filter by is_active if query param exists
+        is_active = request.query_params.get('is_active')
+        products = Product.objects.all().order_by('-created_at')
+        if is_active is not None:
+            products = products.filter(is_active=is_active.lower() == 'true')
+            
+        # ✅ Search by name
+        search_query = request.query_params.get('search')
+        if search_query:
+            products = products.filter(Q(name__icontains=search_query))
+
+        # ✅ Manual pagination
+        page = int(request.query_params.get('page', 1))
+        limit = int(request.query_params.get('limit', 10))
+        paginator = Paginator(products, limit)
+
+        current_page = paginator.page(page)
+        serializer = ProductSerializerAdmin(current_page.object_list, many=True, context={'request': request})
+
+        return Response({
+            'count': paginator.count,
+            'total_pages': paginator.num_pages,
+            'current_page': page,
+            'results': serializer.data
+        })
+
+    def post(self, request):
+        serializer = ProductSerializerAdmin(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+class AdminProductRetrieveUpdateView(APIView):
+    permission_classes = [IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        serializer = ProductSerializerAdmin(product, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        serializer = ProductSerializerAdmin(product, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

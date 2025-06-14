@@ -72,6 +72,7 @@ class AuthStatusView(APIView):
                 "email": user.email,
                 "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
                 "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
+                "exp": token["exp"],  # send token expiry to frontend
             })
 
         except Exception:

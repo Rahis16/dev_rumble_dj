@@ -37,6 +37,7 @@ urlpatterns = [
     path('fetch-tables/', views.fetch_tables, name='fetch-tables'),
     
     
+    path('api/dashboard/', admin_views.dashboard_data, name='dashboard-data'),
     path('api/admin/orders/', admin_views.fetch_all_orders, name='fetch_all_orders'),
     path('api/admin/orders/<int:order_id>/', admin_views.fetch_single_order, name='fetch_single_order'),
     path('api/admin/orders/<int:order_id>/update-payment-status/', admin_views.update_payment_status, name='update_payment_status'),

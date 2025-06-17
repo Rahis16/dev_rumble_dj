@@ -3,8 +3,28 @@ from django.conf import settings
 from django.utils import timezone
 
 
+# Staff (extending User optionally)
+class StaffProfile(models.Model):
+    ROLE_CHOICES=[
+        ('manager', 'Manager'),
+        ('chef', 'Chef'),
+        ('server', 'Server'),
+        ('cashier', 'Cashier'),
+        ('intern_manager', 'Intern Manager'),
+        ('trainer', 'Trainer'),
+        ('intern', 'Intern'),
+    ]
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(choices=ROLE_CHOICES, default='manager')  # e.g. Chef, Server, Cashier
+    rating = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    staff_profile = models.OneToOneField(StaffProfile, null=True, blank=True, on_delete=models.SET_NULL)
     profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     full_name = models.CharField(max_length=255, null=True, blank=True)
     lcid = models.CharField(max_length=100, null=True, blank=True)
@@ -223,4 +243,24 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user.username} - Rs.{self.amount} - {self.method.name} - {self.status}"        
+        return f"{self.user.username} - Rs.{self.amount} - {self.method.name} - {self.status}"   
+    
+    
+    
+
+#implemeneteation of real system now:
+
+# Inventory Items
+class InventoryItem(models.Model):
+    item_name = models.CharField(max_length=100)
+    quantity = models.FloatField(help_text="Enter in kg, L, or units")
+    unit = models.CharField(max_length=20, default='kg')
+    warning_level = models.CharField(
+        max_length=20,
+        choices=[('Good', 'Good'), ('Medium', 'Medium'), ('Low', 'Low'), ('Critical', 'Critical')],
+        default='Good'
+    )
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.item_name         

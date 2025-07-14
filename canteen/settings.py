@@ -123,7 +123,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'canteen.wsgi.application'
 
-CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -133,7 +132,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://mwp7tqvb-3000.inc1.devtunnels.ms",
 ]
 
-
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://rahis.pythonanywhere.com",
+]
 
 
 # Database

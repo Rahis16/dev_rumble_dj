@@ -130,11 +130,13 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://mwp7tqvb-3000.inc1.devtunnels.ms",
+    "https://cms-nextapp-sandy.vercel.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "https://rahis.pythonanywhere.com",
+    "https://cms-nextapp-sandy.vercel.app",
 ]
 
 

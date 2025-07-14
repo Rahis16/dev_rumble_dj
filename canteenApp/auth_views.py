@@ -27,6 +27,7 @@ class CookieLoginView(LoginView):
             httponly=True,
             secure=False,      # False only for local dev with http
             samesite='Lax',
+            path='/',
             max_age=300       # 5 minutes
         )
 

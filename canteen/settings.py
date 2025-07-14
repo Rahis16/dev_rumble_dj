@@ -201,8 +201,14 @@ MEDIA_ROOT = BASE_DIR / 'media'  # where uploaded files will be saved
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Cokiee settings 
-SESSION_COOKIE_SAMESITE = "None"       # ❗ Required for cross-domain
-SESSION_COOKIE_SECURE = True           # ❗ Required with SameSite=None
-CSRF_COOKIE_SAMESITE = "None"          # ❗ Required if CSRF cookie used
-CSRF_COOKIE_SECURE = True   
+# # Cokiee settings 
+# SESSION_COOKIE_SAMESITE = "None"       # ❗ Required for cross-domain
+# SESSION_COOKIE_SECURE = True           # ❗ Required with SameSite=None
+# CSRF_COOKIE_SAMESITE = "None"          # ❗ Required if CSRF cookie used
+# CSRF_COOKIE_SECURE = True
+
+# ✅ Cookie settings for local development (localhost)
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = False          # ❌ Turn off for local dev
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = False             # ❌ Turn off for local dev

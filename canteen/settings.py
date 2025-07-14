@@ -73,8 +73,8 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_COOKIE': 'access_token',  # ✅ custom cookie name
     'AUTH_COOKIE_REFRESH': 'refresh_token',  # ✅ refresh cookie name
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SECURE': False,  # ✅ Set to True in production with HTTPS
+    'AUTH_COOKIE_HTTP_ONLY': False,
+    'AUTH_COOKIE_SECURE': True,  # ✅ Set to True in production with HTTPS
     'AUTH_COOKIE_SAMESITE': 'lax',
 }
 
@@ -207,13 +207,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # # Cokiee settings 
-# SESSION_COOKIE_SAMESITE = "None"       # ❗ Required for cross-domain
-# SESSION_COOKIE_SECURE = True           # ❗ Required with SameSite=None
-# CSRF_COOKIE_SAMESITE = "None"          # ❗ Required if CSRF cookie used
-# CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"       # ❗ Required for cross-domain
+SESSION_COOKIE_SECURE = True           # ❗ Required with SameSite=None
+CSRF_COOKIE_SAMESITE = "None"          # ❗ Required if CSRF cookie used
+CSRF_COOKIE_SECURE = True
 
-# ✅ Cookie settings for local development (localhost)
-SESSION_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SECURE = False          # ❌ Turn off for local dev
-CSRF_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SECURE = False             # ❌ Turn off for local dev
+# # ✅ Cookie settings for local development (localhost)
+# SESSION_COOKIE_SAMESITE = "None"
+# SESSION_COOKIE_SECURE = False          # ❌ Turn off for local dev
+# CSRF_COOKIE_SAMESITE = "None"
+# CSRF_COOKIE_SECURE = False             # ❌ Turn off for local dev

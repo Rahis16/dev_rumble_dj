@@ -26,7 +26,7 @@ class CookieLoginView(LoginView):
             value=str(access),
             httponly=True,
             secure=False,      # False only for local dev with http
-            samesite='Lax',
+            samesite='None',
             path='/',
             max_age=300       # 5 minutes
         )
@@ -35,8 +35,8 @@ class CookieLoginView(LoginView):
             key='refresh_token',
             value=str(refresh),
             httponly=True,
-            secure=False,
-            samesite='Lax',
+            secure=True,
+            samesite='None',
             max_age=86400     # 1 day
         )
 
@@ -100,8 +100,8 @@ class RefreshTokenView(APIView):
                 key='access_token',
                 value=access_token,
                 httponly=True,
-                secure=False,
-                samesite='Lax',
+                secure=True,
+                samesite='None',
                 max_age=60 * 15
             )
             return response

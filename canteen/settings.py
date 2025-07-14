@@ -130,6 +130,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Allow your frontend origin (RECOMMENDED for dev)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://mwp7tqvb-3000.inc1.devtunnels.ms",
 ]
 
 

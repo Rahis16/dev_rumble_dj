@@ -73,7 +73,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_COOKIE': 'access_token',  # ✅ custom cookie name
     'AUTH_COOKIE_REFRESH': 'refresh_token',  # ✅ refresh cookie name
-    'AUTH_COOKIE_HTTP_ONLY': False,
+    'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_SECURE': True,  # ✅ Set to True in production with HTTPS
     'AUTH_COOKIE_SAMESITE': 'lax',
 }

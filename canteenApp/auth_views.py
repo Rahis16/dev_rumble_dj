@@ -48,9 +48,9 @@ class CookieLoginView(LoginView):
 class CookieLogoutView(LogoutView):
     def logout(self, request):
         response = super().logout(request)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
-        return response    
+        response.delete_cookie('access_token', path='/', samesite='None', secure=True)
+        response.delete_cookie('refresh_token', path='/', samesite='None', secure=True)
+        return response
 
 
 

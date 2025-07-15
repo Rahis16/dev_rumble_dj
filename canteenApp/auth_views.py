@@ -27,6 +27,7 @@ class CookieLoginView(LoginView):
             httponly=True,
             secure=True,      # False only for local dev with http
             samesite='None',
+            path='/',  # ✅ ADD THIS
             max_age=300       # 5 minutes
         )
 
@@ -36,6 +37,7 @@ class CookieLoginView(LoginView):
             httponly=True,
             secure=True,
             samesite='None',
+            path='/',
             max_age=86400     # 1 day
         )
 
@@ -43,18 +45,26 @@ class CookieLoginView(LoginView):
     
 
 class CookieLogoutView(APIView):
-    permission_classes = [IsAuthenticated]  # Optional if you want only logged-in users to logout
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         response = Response({"message": "Logged out"})
 
-        # ✅ Delete JWT cookies (must match exact config from login)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
+        # ✅ Delete JWT cookies (must match EXACTLY)
+        response.delete_cookie(
+            key='access_token',
+            path='/',
+            samesite='None',
+            secure=True,  # Must match how it was set
+        )
+        response.delete_cookie(
+            key='refresh_token',
+            path='/',
+            samesite='None',
+            secure=True,
+        )
 
-        # ✅ Optionally clear session & CSRF too (if you're using Django session auth elsewhere)
         request.session.flush()
-
         return response
 
 
@@ -106,6 +116,7 @@ class RefreshTokenView(APIView):
                 httponly=True,
                 secure=True,
                 samesite='None',
+                path='/',
                 max_age=60 * 15
             )
             return response

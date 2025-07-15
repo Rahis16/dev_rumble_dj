@@ -51,8 +51,16 @@ class CookieLogoutView(APIView):
         response = Response({"message": "Logged out"})
 
         # ✅ Only use key and path here (extra args not allowed!)
-        response.delete_cookie('access_token', path='/')
-        response.delete_cookie('refresh_token', path='/')
+        response.delete_cookie(
+            'access_token',
+            path='/',
+            samesite='None'
+        )
+        response.delete_cookie(
+            'refresh_token',
+            path='/',
+            samesite='None'
+        )
 
         if hasattr(request, 'session'):
             try:

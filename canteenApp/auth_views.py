@@ -45,27 +45,12 @@ class CookieLoginView(LoginView):
     
     
 
-class CookieLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        response = Response({"message": "Logged out successfully"})
-
-        response.delete_cookie(
-            key='access_token',
-            path='/',
-            samesite='None',
-            secure=True  # or False for local dev
-        )
-
-        response.delete_cookie(
-            key='refresh_token',
-            path='/',
-            samesite='None',
-            secure=True
-        )
-
-        return response
+class CookieLogoutView(LogoutView):
+    def logout(self, request):
+        response = super().logout(request)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response    
 
 
 

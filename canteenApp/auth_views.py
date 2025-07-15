@@ -50,23 +50,18 @@ class CookieLogoutView(APIView):
     def post(self, request):
         response = Response({"message": "Logged out"})
 
-        # ✅ Delete JWT cookies (must match EXACTLY)
-        response.delete_cookie(
-            key='access_token',
-            path='/',
-            samesite='None',
-            secure=True,  # Must match how it was set
-        )
-        response.delete_cookie(
-            key='refresh_token',
-            path='/',
-            samesite='None',
-            secure=True,
-        )
+        # ✅ Only use key and path here (extra args not allowed!)
+        response.delete_cookie('access_token', path='/')
+        response.delete_cookie('refresh_token', path='/')
 
-        request.session.flush()
+        if hasattr(request, 'session'):
+            try:
+                request.session.flush()
+            except Exception as e:
+                print(f"Session flush failed: {e}")
+
         return response
-
+    
 
 class AuthStatusView(APIView):
     permission_classes = []

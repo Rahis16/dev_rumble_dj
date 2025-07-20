@@ -16,18 +16,18 @@ class CookieLoginView(LoginView):
     def get_response(self):
         response = super().get_response()
 
-        # ✅ Create refresh + access tokens
+        # Create refresh + access tokens
         refresh = RefreshToken.for_user(self.user)
         access = refresh.access_token
 
-        # ✅ Set HttpOnly cookies
+        # Set HttpOnly cookies
         response.set_cookie(
             key='access_token',
             value=str(access),
             httponly=True,
             secure=True,      # False only for local dev with http
             samesite='None',
-            path='/',  # ✅ ADD THIS
+            path='/',  
             max_age=300       # 5 minutes
         )
 
@@ -50,7 +50,7 @@ class CookieLogoutView(APIView):
     def post(self, request):
         response = Response({"message": "Logged out"})
 
-        # ✅ Only use key and path here (extra args not allowed!)
+        # Only use key and path here (extra args not allowed!)
         response.delete_cookie(
             'access_token',
             path='/',

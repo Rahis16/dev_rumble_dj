@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-m(2iri=2vc-d$+*w4o5w6fkd#q#ssm_2pg=$d4u@qps#u^y7#%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['rahis.pythonanywhere.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['rahis.pythonanywhere.com', 'localhost']
 
 
 # Application definition
@@ -206,14 +206,19 @@ MEDIA_ROOT = BASE_DIR / 'media'  # where uploaded files will be saved
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# # Cokiee settings 
+# # Cokiee settings  for production
 SESSION_COOKIE_SAMESITE = "None"       # ❗ Required for cross-domain
 SESSION_COOKIE_SECURE = True           # ❗ Required with SameSite=None
 CSRF_COOKIE_SAMESITE = "None"          # ❗ Required if CSRF cookie used
 CSRF_COOKIE_SECURE = True
 
-# # ✅ Cookie settings for local development (localhost)
-# SESSION_COOKIE_SAMESITE = "None"
-# SESSION_COOKIE_SECURE = False          # ❌ Turn off for local dev
-# CSRF_COOKIE_SAMESITE = "None"
-# CSRF_COOKIE_SECURE = False             # ❌ Turn off for local dev
+# ✅ Cookie settings for local development (localhost)
+# ✅ Best settings for localhost (http://127.0.0.1 or http://localhost)
+# SESSION_COOKIE_SECURE = False
+# SESSION_COOKIE_SAMESITE = "Lax"        # ✅ or "Strict"
+
+# CSRF_COOKIE_SECURE = False
+# CSRF_COOKIE_SAMESITE = "Lax"           # ✅ or "Strict"
+
+# CSRF_COOKIE_HTTPONLY = False
+# CSRF_USE_SESSIONS = False              # Only True if storing token in session

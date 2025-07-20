@@ -1,30 +1,48 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Count
 
+#Permissions assigend to users
+class Permission(models.Model):
+    code = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=100)
 
-# Staff (extending User optionally)
-class StaffProfile(models.Model):
-    ROLE_CHOICES=[
+    def __str__(self):
+        return self.label
+
+class Role(models.Model):
+    ROLE_NAME_CHOICES = [
+        ('admin', 'Admin'),
         ('manager', 'Manager'),
         ('chef', 'Chef'),
         ('server', 'Server'),
         ('cashier', 'Cashier'),
-        ('intern_manager', 'Intern Manager'),
-        ('trainer', 'Trainer'),
+        ('customer', 'Customer'),
         ('intern', 'Intern'),
+        ('trainer', 'Trainer'),
+        ('intern_manager', 'Intern Manager'),
     ]
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    role = models.CharField(choices=ROLE_CHOICES, default='manager')  # e.g. Chef, Server, Cashier
-    rating = models.FloatField(default=0.0)
+
+    name = models.CharField(max_length=50, choices=ROLE_NAME_CHOICES, unique=True)
+    permissions = models.ManyToManyField('Permission', related_name='roles')
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.role}"
-
+        return self.get_name_display()    
+    
 
 class UserProfile(models.Model):
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    ]
+    
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    staff_profile = models.OneToOneField(StaffProfile, null=True, blank=True, on_delete=models.SET_NULL)
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, related_name='users')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     full_name = models.CharField(max_length=255, null=True, blank=True)
     lcid = models.CharField(max_length=100, null=True, blank=True)
@@ -34,12 +52,36 @@ class UserProfile(models.Model):
     program = models.CharField(max_length=100, null=True, blank=True)
     semester = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    orders_count = models.PositiveIntegerField(default=0)
+    total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return self.user.username
     
+    @classmethod
+    def top_by_order_type(cls, order_type='confirmed', limit=2):
+        related_name_map = {
+            'confirmed': 'user__confirmed_orders',
+            'prepared': 'user__prepared_orders',
+            'delivered': 'user__delivered_orders',
+            'cancelled': 'user__cancelled_orders',
+            'refunded': 'user__refunded_orders',
+            # add more as needed
+        }
+        if order_type not in related_name_map:
+            raise ValueError(f"Unsupported order type {order_type}")
+    
+        return (
+            cls.objects
+            .filter(role__name__in=['admin', 'manager', 'chef', 'server', 'cashier'])
+            .annotate(order_count=Count(related_name_map[order_type]))
+            .order_by('-order_count')[:limit]
+        )
+        
+        #usage: top_profiles = UserProfile.top_by_order_type('delivered')
     
     
+
 class Wallet(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -157,6 +199,7 @@ class Order(models.Model):
         ('preparing', 'Preparing'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled'),
+        ('refunded', 'Refunded'),
     ]
     
     PREPARE_DURATION_CHOICES = [
@@ -178,6 +221,12 @@ class Order(models.Model):
     preparing_at = models.DateTimeField(null=True, blank=True)
     prepare_duration = models.IntegerField(choices=PREPARE_DURATION_CHOICES, default=10)
     table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True, related_name="orders")
+    confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="confirmed_orders")
+    prepared_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="prepared_orders")
+    delivered_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="delivered_orders")
+    cancelled_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="cancelled_orders")
+    refunded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="refunded_orders")
+   
 
     def __str__(self):
         return f"Order #{self.pk} by {self.user.username}"
@@ -263,4 +312,17 @@ class InventoryItem(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.item_name         
+        return self.item_name 
+    
+
+    
+
+
+
+    
+        
+    
+    
+    
+    
+    

@@ -122,4 +122,6 @@ class OrderSerializer2(serializers.ModelSerializer):
         ]
 
     def get_table_number(self, obj):
-        return obj.table.number if obj.table else None          
+        return obj.table.number if obj.table else None         
+    
+     

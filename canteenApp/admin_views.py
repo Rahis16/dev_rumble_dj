@@ -8,7 +8,7 @@ from django.utils.dateparse import parse_date
 from django.http import HttpResponse
 from django.db.models import Q
 import csv
-from .models import Order, OrderItem, Payment, Product, StaffProfile, Table, InventoryItem, Product, Wallet
+from .models import Order, OrderItem, Payment, Product, Table, InventoryItem, Product, Wallet, UserProfile, Role, Permission
 from .serializers import OrderSerializer2, ProductSerializerAdmin
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -20,10 +20,104 @@ from django.db.models import Sum, Count, Avg, F
 from django.utils.timezone import now
 from datetime import timedelta, datetime
 from django.utils.timesince import timesince
+from .admin_serializers import SimpleUserSerializer, UserProfileSerializer, RoleSerializer, PermissionSerializer, RoleSerializerCreateView, PermissionSerializerAddRoleView
+from rest_framework import generics, filters
+from django.db import models
+from .admin_role_serializers import UserStatusSerializer
+
+
 
 
 User = get_user_model()
 
+# just for getting user list 
+class UserListAPIViewGetUsers(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = SimpleUserSerializer
+
+#getting the user and userprofile data to use in admin pannel
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_user_profile_data(request, user_id):
+    profle_data = get_object_or_404(UserProfile,user__id=user_id)
+    serializer = UserProfileSerializer(profle_data, context={'request': request})
+    return Response(serializer.data)
+
+
+#getting user role and details to pre set the current status     
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_user_role_status(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    profile = getattr(user, 'profile', None)
+
+    return Response({
+        "id": user.id,
+        "username": user.username,
+        "statuses": {
+            "is_active": user.is_active,
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,
+        },
+        "role": {
+            "id": profile.role.id if profile and profile.role else None,
+            "name": profile.role.name if profile and profile.role else None
+        }
+    }, status=status.HTTP_200_OK)    
+    
+
+#for updateing user status only    
+class UpdateUserStatusAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        is_active = request.data.get("is_active")
+        is_staff = request.data.get("is_staff")
+        is_superuser = request.data.get("is_superuser")
+
+        if user_id is None:
+            return Response({"detail": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Optional updates (only if provided in request)
+        if is_active is not None:
+            user.is_active = is_active
+        if is_staff is not None:
+            user.is_staff = is_staff
+        if is_superuser is not None:
+            user.is_superuser = is_superuser
+
+        user.save()
+
+        return Response({
+            "detail": f"User '{user.username}' status updated successfully.",
+            "statuses": {
+                "is_active": user.is_active,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+            }
+        }, status=status.HTTP_200_OK)
+
+
+#admin role serializers or user role serializers
+class UserStatusAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserStatusSerializer(request.user)
+        return Response(serializer.data)
+    
+    
+#getting admin dashboard data
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_data(request):
@@ -91,7 +185,6 @@ def dashboard_data(request):
     # 🟩 5. Top Stats Cards
     total_orders = Order.objects.count()
     total_sales = Order.objects.aggregate(total=Sum('total_price'))['total'] or 0
-    total_staff = StaffProfile.objects.count()
     active_users = User.objects.filter(is_active=True).count()
     avg_order_value = Order.objects.aggregate(avg=Avg('total_price'))['avg'] or 0
     total_tables = Table.objects.count()
@@ -101,25 +194,22 @@ def dashboard_data(request):
         "total_orders": total_orders,
         "total_sales": float(total_sales),
         "active_tables": f"{occupied_tables}/{total_tables}",
-        "total_staff": total_staff,
         "active_users": active_users,
         "avg_order_value": round(float(avg_order_value), 2),
     }
 
     # 🟩 6. Quick Metrics
     orders_in_queue = Order.objects.filter(status='pending').count()
-    avg_rating = StaffProfile.objects.aggregate(rating=Avg('rating'))['rating'] or 0
     stock_alerts = InventoryItem.objects.filter(warning_level__in=['Low', 'Critical']).count()
     peak_hour = max(hourlyOrdersData, key=lambda x: x['orders'])['hour'] if hourlyOrdersData else "N/A"
 
     quickMetrics = {
         "orders_in_queue": orders_in_queue,
-        "avg_rating": round(avg_rating, 1),
         "stock_alerts": stock_alerts,
         "peak_hour": peak_hour
     }
     
-    recent_orders = Order.objects.select_related("user").prefetch_related("items", "items__product").order_by("-ordered_at")[:4]
+    recent_orders = Order.objects.select_related("user").prefetch_related("items", "items__product").order_by("-ordered_at")[:5]
     recentOrdersData = []
     for order in recent_orders:
         item_name = order.items.first().product.name if order.items.exists() else "N/A"
@@ -130,19 +220,6 @@ def dashboard_data(request):
             "status": order.status.title(),
             "amount": f"Rs. {order.total_price}",
         })
-        
-    staff_profiles = StaffProfile.objects.select_related("user").annotate(
-                orders_handled=Count("user__orders")
-                ).order_by("-orders_handled")[:4]
-    
-    staffPerformanceData = [
-        {
-            "name": sp.user.profile.full_name,
-            "role": sp.role.title(),
-            "orders": sp.orders_handled,
-            "rating": round(sp.rating, 1),
-        } for sp in staff_profiles
-    ]    
     
     alert_items = InventoryItem.objects.all().order_by("warning_level")[:5]
     inventoryAlertsData = [
@@ -157,6 +234,38 @@ def dashboard_data(request):
             )
         } for i in alert_items
     ]
+    
+    # Call the class method directly from the model, not from the queryset
+    top_delivery_staff = UserProfile.top_by_order_type('delivered')
+    top_confirmed_staff = UserProfile.top_by_order_type('confirmed')
+    top_preparing_staff = UserProfile.top_by_order_type('prepared')
+    top_cancelled_staff = UserProfile.top_by_order_type('cancelled')
+    top_refunded_staff = UserProfile.top_by_order_type('refunded')
+    
+    # Build separate lists or a grouped dictionary
+    staff_profiles = {
+        "delivered": [
+            {"name": staff.user.profile.full_name, "order_count": staff.order_count, "role": staff.user.profile.role.name}
+            for staff in top_delivery_staff
+        ],
+        "confirmed": [
+            {"name": staff.user.profile.full_name, "order_count": staff.order_count, "role": staff.user.profile.role.name}
+            for staff in top_confirmed_staff
+        ],
+        "prepared": [
+            {"name": staff.user.profile.full_name, "order_count": staff.order_count, "role": staff.user.profile.role.name}
+            for staff in top_preparing_staff
+        ],
+        "cancelled": [
+            {"name": staff.user.profile.full_name, "order_count": staff.order_count, "role": staff.user.profile.role.name}
+            for staff in top_cancelled_staff
+        ],
+        "refunded": [
+            {"name": staff.user.profile.full_name, "order_count": staff.order_count, "role": staff.user.profile.role.name}
+            for staff in top_refunded_staff
+        ],
+    }
+
 
     return Response({
         "salesData": salesData,
@@ -166,8 +275,8 @@ def dashboard_data(request):
         "topStatsCards": topStatsCards,
         "quickMetrics": quickMetrics,
         "recentOrdersData": recentOrdersData,
-        "staffPerformanceData": staffPerformanceData,
-        "inventoryAlertsData": inventoryAlertsData
+        "inventoryAlertsData": inventoryAlertsData,
+        "staff_profiles": staff_profiles
     })
 
 
@@ -264,35 +373,69 @@ def update_payment_status(request, order_id):
         return Response({"error": "Payment details not found for this order"}, status=status.HTTP_404_NOT_FOUND)
     
     
+    
 #changing order status to confirmed or cancelled    
 @api_view(['POST'])
-@permission_classes([IsAdminUser])  # You can later replace this with custom role-based permission
+@permission_classes([IsAuthenticated])
 def update_order_status(request, order_id):
     try:
+        user = request.user
+        user_role = getattr(user.profile.role, 'name', None).lower()
+
+        if not user_role:
+            return Response({"error": "User role not found."}, status=status.HTTP_403_FORBIDDEN)
+
         order = Order.objects.get(pk=order_id)
         new_status = request.data.get("status")
 
-        if new_status not in ['confirmed', 'cancelled']:
-            return Response({"error": "Invalid status. Only 'confirmed' or 'cancelled' allowed."},
+        # List of allowed statuses from model
+        allowed_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+
+        if new_status not in allowed_statuses:
+            return Response({"error": f"Invalid status. Allowed: {allowed_statuses}"},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        if order.status in ['confirmed', 'cancelled']:
+        # Role-based allowed transitions
+        role_permissions = {
+            'admin': allowed_statuses,
+            'manager': allowed_statuses,
+            'chef': ['preparing', 'cancelled'],
+            'server': ['delivered'],
+            'cashier': ['cancelled', 'refunded']
+        }
+
+        if new_status not in role_permissions.get(user_role, []):
+            return Response({"error": f"Role '{user_role}' cannot change status to '{new_status}'."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Optional: prevent updates on terminal states
+        if order.status in ['cancelled', 'refunded']:
             return Response({"error": f"Order is already {order.status} and cannot be changed."},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # Set optional audit fields
+        if new_status == "confirmed":
+            order.confirmed_by = user
+        elif new_status == "cancelled":
+            order.cancelled_by = user
+        elif new_status == "delivered":
+            order.delivered_by = user
+        elif new_status == "preparing":
+            order.prepared_by = user
+        elif new_status == "refunded":
+            order.refunded_by = user
+        
+        
         order.status = new_status
         order.save()
 
         return Response({
-            "message": f"Order successfully {new_status}.",
+            "message": f"Order status updated to '{new_status}'.",
             "status": order.status,
-            "confirmed_at": order.confirmed_at if new_status == "confirmed" else None
         }, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)   
-    
-    
+        return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     
     
     
@@ -353,3 +496,200 @@ class AdminProductRetrieveUpdateView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+    
+
+
+class UserListAPIView(generics.ListAPIView):
+    serializer_class = UserProfileSerializer
+    queryset = UserProfile.objects.select_related('user', 'role').all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status = self.request.query_params.get('status')
+        role = self.request.query_params.get('role')
+        search = self.request.query_params.get('search')
+
+        if status and status != "all":
+            queryset = queryset.filter(status=status)
+
+        if role and role != "all":
+            queryset = queryset.filter(role__name=role)
+
+        if search:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search) |
+                Q(user__email__icontains=search)
+            )
+
+        return queryset
+    
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        page = request.query_params.get('page', 1)
+        limit = request.query_params.get('limit', 4)
+
+        try:
+            page = int(page)
+            limit = int(limit)
+        except ValueError:
+            return Response({"error": "Invalid pagination parameters"}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = Paginator(queryset, limit)
+
+        try:
+            users_page = paginator.page(page)
+        except PageNotAnInteger:
+            users_page = paginator.page(1)
+        except EmptyPage:
+            return Response({"error": "Page out of range"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(users_page.object_list, many=True)
+
+        return Response({
+            "count": paginator.count,
+            "total_pages": paginator.num_pages,
+            "current_page": page,
+            "results": serializer.data,
+        })
+
+
+class RoleListAPIView(generics.ListAPIView):
+    serializer_class = RoleSerializer
+    queryset = Role.objects.prefetch_related('permissions', 'users')
+    
+    
+    
+class RoleListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Role.objects.prefetch_related('permissions').all()
+    serializer_class = RoleSerializerCreateView
+
+class PermissionListAPIView(generics.ListAPIView):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializerAddRoleView   
+    
+
+class AvailableRolesAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        all_choices = dict(Role.ROLE_NAME_CHOICES)
+        used_roles = Role.objects.values_list('name', flat=True)
+        available = [
+            {"value": key, "label": val}
+            for key, val in all_choices.items()
+            if key not in used_roles
+        ]
+        return Response(available)    
+    
+    
+class RoleRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Role.objects.prefetch_related('permissions').all()
+    serializer_class = RoleSerializerCreateView
+    permission_classes = [IsAdminUser]
+    lookup_field = 'id'
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Prevent deletion of critical roles
+        if instance.name in ['admin', 'manager', 'customer']:
+            return Response(
+                {"detail": f"Cannot delete the '{instance.name}' role. It is protected."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        # Fetch the fallback role (customer)
+        fallback_role = get_object_or_404(Role, name='customer')
+
+        # Ensure fallback role has `use_client_panel` permission
+        permission_code = 'use_client_panel'
+        try:
+            fallback_permission = Permission.objects.get(code=permission_code)
+        except Permission.DoesNotExist:
+            fallback_permission = Permission.objects.create(
+                code=permission_code,
+                label='Use Client Panel'
+            )
+        fallback_role.permissions.add(fallback_permission)
+        
+        users_with_role = UserProfile.objects.filter(role=instance)
+        for user in users_with_role:
+            user.role = fallback_role
+            user.save()
+        
+        self.perform_destroy(instance)
+        return Response({
+            "detail": f"Role '{role.name}' assigned to user '{user.username}' successfully.",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "is_active": user.is_active,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+                "role": {
+                    "id": role.id,
+                    "name": role.name,
+                }
+            }
+        }, status=status.HTTP_200_OK)    
+
+
+class AssignUserRoleAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        role_id = request.data.get("role_id")
+
+        if not user_id or not role_id:
+            return Response({"detail": "User ID and Role ID are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+            role = Role.objects.get(id=role_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Role.DoesNotExist:
+            return Response({"detail": "Role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # ✅ Now assign via the profile
+        try:
+            user.profile.role = role
+            if role.name != 'customer':
+                
+                user.is_staff = True
+                print(f"Setting is_staff to {user.is_staff} for user {user.username}")
+            else:
+                user.is_staff = False
+            user.save()   
+            print(f"Saving user {user.username} with role {role.name} with is_staff {user.is_staff}") 
+            user.profile.save()
+            
+        except Exception as e:
+            return Response({"detail": f"Failed to assign role: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            "detail": f"{user.username} has been assigned the role '{role.name}' successfully."
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def user_stats(request):
+    total_users = UserProfile.objects.count()
+    active = UserProfile.objects.filter(status='active').count()
+    inactive = UserProfile.objects.filter(status='inactive').count()
+    pending = UserProfile.objects.filter(status='pending').count()
+    revenue = UserProfile.objects.aggregate(total=models.Sum('total_spent'))['total'] or 0
+
+    return Response({
+        "total_users": total_users,
+        "active_users": active,
+        "inactive_users": inactive,
+        "pending_users": pending,
+        "total_revenue": revenue
+    })    

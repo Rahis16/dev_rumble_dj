@@ -44,6 +44,18 @@ urlpatterns = [
     path('api/admin/orders/<int:order_id>/update-status/', admin_views.update_order_status, name='update_order_status'),
     path('api/admin/products/', admin_views.AdminProductListCreateView.as_view(), name='admin-product-list-create'),
     path('api/admin/products/<int:pk>/', admin_views.AdminProductRetrieveUpdateView.as_view(), name='admin-product-detail-update'),
-
+    path('api/users/', admin_views.UserListAPIView.as_view(), name='user-list'),
+    path('api/roles/', admin_views.RoleListAPIView.as_view(), name='role-list'),
+    path('api/user-stats/', admin_views.user_stats, name='user-stats'),
+    path('api/roles-post/', admin_views.RoleListCreateAPIView.as_view(), name='role-list-create'),
+    path('api/permissions/', admin_views.PermissionListAPIView.as_view(), name='permission-list'),
+    path('api/available-roles/', admin_views.AvailableRolesAPIView.as_view()),
+    path('api/user/role-check/', admin_views.UserStatusAPIView.as_view(), name='user-status'),
+    path('api/roles/<int:id>/', admin_views.RoleRetrieveUpdateDestroyAPIView.as_view(), name='role-edit-delete'),
+    path("api/assign-role/", admin_views.AssignUserRoleAPIView.as_view(), name="assign-user-role"),
+    path("api/get-users/", admin_views.UserListAPIViewGetUsers.as_view(), name="assign-user-role"),
+    path("api/update-user-status/", admin_views.UpdateUserStatusAPIView.as_view(), name="update-user-status"), #updating status like is_active, is_staff etc
+    path('api/user-status-role/<int:user_id>/', admin_views.get_user_role_status, name='user-status-role'), #getting the role of the user and thier status 
+    path('api/user-profile-data/<int:user_id>/', admin_views.get_user_profile_data, name='user-profile-data'), #getting the user profile data by id
 ]
      

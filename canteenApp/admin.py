@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, StaffProfile, InventoryItem
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, InventoryItem, Role, Permission
+
 
 
 @admin.register(UserProfile)
@@ -143,17 +144,6 @@ class TableAdmin(admin.ModelAdmin):
     occupied_seats.short_description = 'Occupied Seats'   
     
     
-    
-# Customize StaffProfile admin
-@admin.register(StaffProfile)
-class StaffProfileAdmin(admin.ModelAdmin):
-    list_display = ('user__profile__full_name', 'role', 'rating')
-    list_filter = ('role',)
-    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'role')
-
-    def user_full_name(self, obj):
-        return obj.user.get_full_name()
-    user_full_name.short_description = 'Staff Name'
 
 # Customize InventoryItem admin
 @admin.register(InventoryItem)
@@ -161,3 +151,23 @@ class InventoryItemAdmin(admin.ModelAdmin):
     list_display = ('item_name', 'quantity', 'unit', 'warning_level', 'last_updated')
     list_filter = ('warning_level', 'unit')
     search_fields = ('item_name',)       
+    
+    
+    
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
+    filter_horizontal = ('permissions',)
+    
+    
+    
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ('code', 'label')
+    search_fields = ('code', 'label')    
+    
+    
+    
+
+    

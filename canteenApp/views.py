@@ -381,6 +381,13 @@ def checkout(request):
             total_price=total_price,
             status='pending',
         )
+        
+        # increase the order count for the user 
+        user.profile.orders_count += 1
+        user.profile.total_spent += total_price
+        user.profile.save()
+        
+        # Create order items
 
         for item in cart_items:
             OrderItem.objects.create(

@@ -189,7 +189,7 @@ def dashboard_data(request):
     active_users = User.objects.filter(is_active=True).count()
     avg_order_value = Order.objects.aggregate(avg=Avg('total_price'))['avg'] or 0
     total_tables = Table.objects.count()
-    occupied_tables = Table.objects.filter(is_occupied=True).count()
+    occupied_tables = Table.objects.filter(status='occupied').count()
 
     topStatsCards = {
         "total_orders": total_orders,

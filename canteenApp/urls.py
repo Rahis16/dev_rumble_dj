@@ -4,6 +4,7 @@ from .import auth_views
 from .auth_views import CookieLoginView, CookieLogoutView
 from .payment_views import pay_with_wallet, pay_with_qr, pay_on_counter
 from . import admin_views 
+from . import table_admin_views
 
 urlpatterns = [
     path('', views.home, name="home"),
@@ -57,5 +58,12 @@ urlpatterns = [
     path("api/update-user-status/", admin_views.UpdateUserStatusAPIView.as_view(), name="update-user-status"), #updating status like is_active, is_staff etc
     path('api/user-status-role/<int:user_id>/', admin_views.get_user_role_status, name='user-status-role'), #getting the role of the user and thier status 
     path('api/user-profile-data/<int:user_id>/', admin_views.get_user_profile_data, name='user-profile-data'), #getting the user profile data by id
+    
+    path('api/tables/', table_admin_views.TableListAPIView.as_view(), name='table-list'),
+    path('api/tables/<int:pk>/', table_admin_views.TableStatusUpdateAPIView.as_view(), name='table-status-update'),
+    path('api/reservations/', table_admin_views.ReservationListAPIView.as_view(), name='reservation-list'),
+    path('api/reservations/create/', table_admin_views.ReservationCreateAPIView.as_view(), name='reservation-create'),
+    path('api/reservations/<int:pk>/', table_admin_views.ReservationUpdateDeleteAPIView.as_view(), name='reservation-update-delete'),
+    path('api/table-update-logs/', table_admin_views.TableUpdateLogListAPIView.as_view(), name='update-log-list'),
 ]
      

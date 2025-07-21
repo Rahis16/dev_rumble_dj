@@ -24,6 +24,7 @@ from .admin_serializers import SimpleUserSerializer, UserProfileSerializer, Role
 from rest_framework import generics, filters
 from django.db import models
 from .admin_role_serializers import UserStatusSerializer
+from django.utils.encoding import smart_str
 
 
 
@@ -422,6 +423,18 @@ def update_order_status(request, order_id):
             order.delivered_by = user
         elif new_status == "preparing":
             order.prepared_by = user
+             # 🔽 Get duration from request and set it
+            duration = request.data.get("prepare_duration")
+            if not duration:
+                return Response({"error": "Prepare duration is required when setting to 'preparing'."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            try:
+                duration = int(duration)
+                order.prepare_duration = duration
+            except ValueError:
+                return Response({"error": "Prepare duration must be a valid integer."},
+                                status=status.HTTP_400_BAD_REQUEST)
+                
         elif new_status == "refunded":
             order.refunded_by = user
         
@@ -529,6 +542,10 @@ class UserListAPIView(generics.ListAPIView):
     
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
+        
+        # ✅ Handle CSV export
+        if request.query_params.get('export') == 'csv':
+            return self.export_csv(queryset)
 
         page = request.query_params.get('page', 1)
         limit = request.query_params.get('limit', 4)
@@ -556,6 +573,32 @@ class UserListAPIView(generics.ListAPIView):
             "current_page": page,
             "results": serializer.data,
         })
+    
+    def export_csv(self, queryset):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="user_profiles.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            "Username", "Email", "Full Name", "Role", "Status", "Phone", "Faculty", "Program", "Semester", "Orders Count", "Total Spent"
+        ])
+
+        for profile in queryset:
+            writer.writerow([
+                smart_str(profile.user.username),
+                smart_str(profile.user.email),
+                smart_str(profile.full_name or ""),
+                smart_str(profile.role.name if profile.role else ""),
+                smart_str(profile.status),
+                smart_str(profile.phone_number or ""),
+                smart_str(profile.faculty or ""),
+                smart_str(profile.program or ""),
+                smart_str(profile.semester or ""),
+                smart_str(profile.orders_count or ""),
+                smart_str(profile.total_spent or ""),
+            ])
+
+        return response    
 
 
 class RoleListAPIView(generics.ListAPIView):
@@ -595,48 +638,49 @@ class RoleRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-
+        
         # Prevent deletion of critical roles
         if instance.name in ['admin', 'manager', 'customer']:
             return Response(
                 {"detail": f"Cannot delete the '{instance.name}' role. It is protected."},
                 status=status.HTTP_403_FORBIDDEN
             )
-            
+
         # Fetch the fallback role (customer)
         fallback_role = get_object_or_404(Role, name='customer')
 
         # Ensure fallback role has `use_client_panel` permission
         permission_code = 'use_client_panel'
-        try:
-            fallback_permission = Permission.objects.get(code=permission_code)
-        except Permission.DoesNotExist:
-            fallback_permission = Permission.objects.create(
-                code=permission_code,
-                label='Use Client Panel'
-            )
+        fallback_permission, created = Permission.objects.get_or_create(
+            code=permission_code,
+            defaults={'label': 'Use Client Panel'}
+        )
         fallback_role.permissions.add(fallback_permission)
-        
+
+        # Reassign users to fallback role
         users_with_role = UserProfile.objects.filter(role=instance)
+        reassigned_users = []
         for user in users_with_role:
             user.role = fallback_role
             user.save()
-        
-        self.perform_destroy(instance)
-        return Response({
-            "detail": f"Role '{role.name}' assigned to user '{user.username}' successfully.",
-            "user": {
+            reassigned_users.append({
                 "id": user.id,
                 "username": user.username,
                 "is_active": user.is_active,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
                 "role": {
-                    "id": role.id,
-                    "name": role.name,
+                    "id": fallback_role.id,
+                    "name": fallback_role.name,
                 }
-            }
-        }, status=status.HTTP_200_OK)    
+            })
+
+        self.perform_destroy(instance)
+        return Response({
+            "detail": f"Role '{instance.name}' deleted and reassigned to fallback role '{fallback_role.name}'.",
+            "reassigned_users": reassigned_users
+        }, status=status.HTTP_200_OK)
+
 
 
 class AssignUserRoleAPIView(APIView):
@@ -683,13 +727,13 @@ def user_stats(request):
     total_users = UserProfile.objects.count()
     active = UserProfile.objects.filter(status='active').count()
     inactive = UserProfile.objects.filter(status='inactive').count()
-    pending = UserProfile.objects.filter(status='pending').count()
+    staff_user = UserProfile.objects.filter(user__is_staff=True).count()
     revenue = UserProfile.objects.aggregate(total=models.Sum('total_spent'))['total'] or 0
 
     return Response({
         "total_users": total_users,
         "active_users": active,
         "inactive_users": inactive,
-        "pending_users": pending,
+        "staff_users": staff_user,
         "total_revenue": revenue
     })    

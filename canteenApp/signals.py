@@ -1,8 +1,8 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 # from django.contrib.auth.models import User
 from django.conf import settings
-from .models import UserProfile, Wallet, Permission, Role
+from .models import UserProfile, Wallet, Permission, Role,  Table, Reservation, Order, TableUpdateLog as UpdateLog
 from django.db.models.signals import post_migrate
 
 
@@ -87,3 +87,42 @@ def create_default_permissions(sender, **kwargs):
     for code, label in predefined_permissions:
         Permission.objects.get_or_create(code=code, label=label)        
         
+        
+        
+# Table status change
+@receiver(pre_save, sender=Table)
+def log_table_status_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # skip on creation
+
+    previous = Table.objects.get(pk=instance.pk)
+
+    if previous.status != instance.status:
+        msg = f"Table {instance.number} changed to {instance.status}"
+        type_map = {
+            "available": "success",
+            "cleaning": "success",
+            "occupied": "warning",
+            "reserved": "info"
+        }
+        UpdateLog.objects.create(message=msg, type=type_map.get(instance.status, "info"))
+
+
+# Reservation created
+@receiver(post_save, sender=Reservation)
+def log_new_reservation(sender, instance, created, **kwargs):
+    if created:
+        msg = f"New reservation for Table {instance.table_number} at {instance.time}"
+        UpdateLog.objects.create(message=msg, type="info")
+
+
+# Order status change
+@receiver(pre_save, sender=Order)
+def log_order_status_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+
+    previous = Order.objects.get(pk=instance.pk)
+    if previous.status != instance.status and instance.status == "completed":
+        msg = f"Table {instance.table.number} order completed - Rs. {instance.total_amount}"
+        UpdateLog.objects.create(message=msg, type="info")        

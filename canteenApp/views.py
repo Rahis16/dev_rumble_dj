@@ -313,14 +313,13 @@ def fetch_tables(request):
     tables = Table.objects.all()
     table_data = []
     for table in tables:
-        available_seats = table.capacity - table.orders.filter(status="pending").count()
+        available_seats = table.capacity - table.orders.filter(status__in=['pending', 'preparing',]).count()
         if available_seats < 0:
             available_seats = 0
         table_data.append({
             "id": table.id,
             "number": table.number,
             "capacity": table.capacity,
-            "is_occupied": table.is_occupied,
             "available_seats": available_seats
         })
     return Response(table_data, status=status.HTTP_200_OK)
@@ -351,7 +350,7 @@ def checkout(request):
         except Table.DoesNotExist:
             return Response({"error": "Table not found."}, status=404)    
         
-        if table.is_occupied:
+        if table.status == 'occupied':
             return Response({"error": "Table is already occupied."}, status=400)
 
     try:

@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
+from django.utils.timezone import now
 
 #Permissions assigend to users
 class Permission(models.Model):
@@ -176,19 +177,112 @@ class CartItem(models.Model):
 
 
 
-class Table(models.Model):
-    number = models.IntegerField(unique=True)
-    capacity = models.IntegerField(default=4)
-    is_occupied = models.BooleanField(default=False)  # Auto-update based on active orders
+# class Table(models.Model):
+#     number = models.IntegerField(unique=True)
+#     capacity = models.IntegerField(default=4)
+#     is_occupied = models.BooleanField(default=False)  # Auto-update based on active orders
+
+#     def __str__(self):
+#         return f"Table {self.number}"
+
+#     def update_occupancy(self):
+#         # Count only 'preparing' orders for this table
+#         active_orders = self.orders.filter(status="pending").count()
+#         self.is_occupied = active_orders >= self.capacity - 1
+#         self.save()
+class TableUpdateLog(models.Model):
+    TYPE_CHOICES = [
+        ('success', 'Success'),
+        ('info', 'Info'),
+        ('warning', 'Warning'),
+    ]
+
+    message = models.CharField(max_length=255)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info')
+    created_at = models.DateTimeField(default=now)
 
     def __str__(self):
-        return f"Table {self.number}"
+        return f"[{self.created_at.strftime('%H:%M')}] {self.message}"
+
+class Table(models.Model):
+    STATUS_CHOICES = [
+        ('available', 'Available'),
+        ('occupied', 'Occupied'),
+        ('reserved', 'Reserved'),
+        ('cleaning', 'Cleaning'),
+    ]
+
+    AREA_CHOICES = [
+        ('Main Hall', 'Main Hall'),
+        ('Window Side', 'Window Side'),
+        ('Counter Side', 'Counter Side'),
+        ('Private Section', 'Private Section'),
+    ]
+
+    number = models.IntegerField(unique=True)
+    capacity = models.IntegerField(default=4)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    area = models.CharField(max_length=50, choices=AREA_CHOICES, default='Main Hall')
+
+    # Time info
+    occupied_at = models.DateTimeField(blank=True, null=True)
+    estimated_finish = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Table {self.number} - {self.status}"
+    
+    def get_areas(self):
+        return [key for key, _ in self.AREA_CHOICES]
+             
+            
+    
 
     def update_occupancy(self):
-        # Count only 'preparing' orders for this table
-        active_orders = self.orders.filter(status="pending").count()
-        self.is_occupied = active_orders >= self.capacity - 1
+        from django.utils import timezone
+    
+        active_orders_count = self.orders.filter(status__in=["pending", "preparing"]).count()
+    
+        if active_orders_count >= self.capacity:
+            self.status = "occupied"
+            self.occupied_at = self.occupied_at or timezone.now()
+    
+        elif active_orders_count > 0:
+            self.status = "available"  # Not fully used, still available
+            self.occupied_at = None
+    
+        else:
+            # No active orders: if it *was* occupied, now go to cleaning
+            if self.status == "occupied":
+                self.status = "cleaning"
+                self.occupied_at = None
+    
         self.save()
+    
+
+    @property
+    def order_value(self):
+        return sum(order.total_price for order in self.orders.filter(status__in=["pending", "preparing"]))
+
+
+class Reservation(models.Model):
+    STATUS_CHOICES = [
+        ('confirmed', 'Confirmed'),
+        ('pending', 'Pending'),
+    ]
+
+    table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True, related_name="reservations")
+    customer_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField()
+    date = models.DateField()
+    time = models.TimeField()
+    guests = models.PositiveIntegerField()
+    special_requests = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reservation for {self.customer_name} on {self.date} at {self.time}"
         
 
 # Order model (user, status, total, timestamp)
@@ -207,6 +301,9 @@ class Order(models.Model):
         (10, '10 minutes'),
         (15, '15 minutes'),
         (20, '20 minutes'),
+        (30, '30 minutes'),
+        (45, '45 minutes'),
+        (60, '20 minutes'),
     ]
 
     user = models.ForeignKey(

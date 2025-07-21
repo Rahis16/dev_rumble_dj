@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, InventoryItem, Role, Permission
-
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, InventoryItem, Role, Permission, Reservation
 
 
 @admin.register(UserProfile)
@@ -132,16 +131,43 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     #     return False  
     
     
+# @admin.register(Table)
+# class TableAdmin(admin.ModelAdmin):
+#     list_display = ('number', 'capacity', 'is_occupied', 'occupied_seats')
+#     list_editable = ('capacity',)
+#     list_filter = ('is_occupied',)
+#     search_fields = ('number',)
+
+#     def occupied_seats(self, obj):
+#         return obj.orders.filter(status='preparing').count()
+#     occupied_seats.short_description = 'Occupied Seats' 
+
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
-    list_display = ('number', 'capacity', 'is_occupied', 'occupied_seats')
-    list_editable = ('capacity',)
-    list_filter = ('is_occupied',)
+    list_display = (
+        'number',
+        'capacity',
+        'status',
+        'area',
+        'occupied_at',
+        'estimated_finish',
+        'order_value_display',
+    )
+    list_filter = ('status', 'area')
     search_fields = ('number',)
+    ordering = ('number',)
 
-    def occupied_seats(self, obj):
-        return obj.orders.filter(status='preparing').count()
-    occupied_seats.short_description = 'Occupied Seats'   
+    @admin.display(description="Order Value (Active)")
+    def order_value_display(self, obj):
+        return f"Rs. {obj.order_value:.2f}" 
+    
+    
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = ('customer_name', 'table', 'date', 'time', 'guests', 'status')
+    search_fields = ('customer_name', 'phone', 'email')
+    list_filter = ('status', 'date')
+     
     
     
 

@@ -1,7 +1,7 @@
 # admin_serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Role, Permission, UserProfile
+from .models import Role, Permission, UserProfile, InventoryItem
 from django.contrib.auth import get_user_model
 from .admin_role_serializers import UserStatusSerializer
 
@@ -71,3 +71,10 @@ class RoleSerializerCreateView(serializers.ModelSerializer):  #for creating role
         role = Role.objects.create(**validated_data)
         role.permissions.set(permissions)
         return role
+    
+    
+    
+class InventoryItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InventoryItem
+        fields = '__all__'    

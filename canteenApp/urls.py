@@ -2,7 +2,7 @@ from django.urls import path, include
 from . import views
 from .import auth_views
 from .auth_views import CookieLoginView, CookieLogoutView
-from .payment_views import pay_with_wallet, pay_with_qr, pay_on_counter
+from .payment_views import pay_with_wallet, pay_with_qr, pay_on_counter, PaymentListAPIView
 from . import admin_views 
 from . import table_admin_views
 
@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/pay/wallet/', pay_with_wallet),
     path('api/pay/qr/', pay_with_qr),
     path('api/pay/counter/', pay_on_counter),
+    path('api/payments/', PaymentListAPIView.as_view(), name='payment-list'),
     
     path('fetch-tables/', views.fetch_tables, name='fetch-tables'),
     
@@ -65,5 +66,7 @@ urlpatterns = [
     path('api/reservations/create/', table_admin_views.ReservationCreateAPIView.as_view(), name='reservation-create'),
     path('api/reservations/<int:pk>/', table_admin_views.ReservationUpdateDeleteAPIView.as_view(), name='reservation-update-delete'),
     path('api/table-update-logs/', table_admin_views.TableUpdateLogListAPIView.as_view(), name='update-log-list'),
+    path("api/inventory-items/", admin_views.InventoryItemListView.as_view(), name="inventory-list-create"),
+    path("api/inventory-items/<int:pk>/", admin_views.InventoryItemRetrieveUpdateDestroyAPIView.as_view(), name="inventory-detail"),
 ]
      

@@ -385,6 +385,8 @@ class Payment(models.Model):
         ("pending", "Pending"),
         ("paid", "Paid"),
         ("fake", "Fake Payment"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded")
     ], default="pending")
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -407,6 +409,7 @@ class InventoryItem(models.Model):
         default='Good'
     )
     last_updated = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)  # ✅ Soft delete support
 
     def __str__(self):
         return self.item_name 

@@ -20,7 +20,7 @@ from django.db.models import Sum, Count, Avg, F
 from django.utils.timezone import now
 from datetime import timedelta, datetime
 from django.utils.timesince import timesince
-from .admin_serializers import SimpleUserSerializer, UserProfileSerializer, RoleSerializer, PermissionSerializer, RoleSerializerCreateView, PermissionSerializerAddRoleView
+from .admin_serializers import SimpleUserSerializer, UserProfileSerializer, RoleSerializer, InventoryItemSerializer, RoleSerializerCreateView, PermissionSerializerAddRoleView
 from rest_framework import generics, filters
 from django.db import models
 from .admin_role_serializers import UserStatusSerializer
@@ -331,7 +331,7 @@ def fetch_all_orders(request):
 
     # Pagination
     paginator = PageNumberPagination()
-    paginator.page_size = 100
+    paginator.page_size = 5
     paginated_orders = paginator.paginate_queryset(orders, request)
 
     serializer = OrderSerializer2(paginated_orders, many=True)
@@ -360,9 +360,17 @@ def update_payment_status(request, order_id):
 
         status_update = request.data.get("status")
 
-        if status_update not in ["pending", "paid", "fake"]:
+        if status_update not in ["pending", "paid", "fake", "failed", "refunded"]:
             return Response({"error": "Invalid payment status"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        #update wallet if the status is refunded if paid via wallet
+        
+        if payment.method == "wallet":
+            if status_update == "refunded":
+                wallet = order.user.wallet
+                wallet.balance += order.total_price
+                wallet.save()
+                
         payment.status = status_update
         payment.save()
 
@@ -737,3 +745,61 @@ def user_stats(request):
         "staff_users": staff_user,
         "total_revenue": revenue
     })    
+    
+    
+    
+# # List + Create for Inventory management
+# class InventoryItemListCreateAPIView(generics.ListCreateAPIView):
+#     queryset = InventoryItem.objects.all().order_by('-last_updated')
+#     serializer_class = InventoryItemSerializer
+
+
+
+# Retrieve + Update + Delete
+class InventoryItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = InventoryItem.objects.all()
+    serializer_class = InventoryItemSerializer    
+    
+    
+class InventoryItemListView(generics.ListAPIView):
+    serializer_class = InventoryItemSerializer
+
+    def get_queryset(self):
+        queryset = InventoryItem.objects.filter(is_deleted=False).order_by("-last_updated")
+        warning_level = self.request.query_params.get("warning_level")
+        search = self.request.query_params.get("search")
+
+        if warning_level and warning_level.lower() != "all":
+            queryset = queryset.filter(warning_level__iexact=warning_level)
+
+        if search:
+            queryset = queryset.filter(Q(item_name__icontains=search))
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if request.query_params.get("export") == "csv":
+            return self.export_csv(queryset)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def export_csv(self, queryset):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="inventory.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["Item Name", "Quantity", "Unit", "Warning Level", "Last Updated"])
+
+        for item in queryset:
+            writer.writerow([
+                smart_str(item.item_name),
+                smart_str(item.quantity),
+                smart_str(item.unit),
+                smart_str(item.warning_level),
+                smart_str(item.last_updated.strftime("%Y-%m-%d %H:%M")),
+            ])
+
+        return response    

@@ -42,10 +42,10 @@ class ReservationListAPIView(generics.ListAPIView):
             queryset = queryset.filter(date=date)
         if time:
             queryset = queryset.filter(time=time)
-        if search:
-            queryset = queryset.filter(customer_name__icontains=search)
-        if area:
-            queryset = queryset.filter(table__area=area)
+        # if search:
+        #     queryset = queryset.filter(customer_name__icontains=search)
+        # if area:
+        #     queryset = queryset.filter(table__area=area)
             
             
         return queryset

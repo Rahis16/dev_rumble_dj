@@ -748,10 +748,10 @@ def user_stats(request):
     
     
     
-# # List + Create for Inventory management
-# class InventoryItemListCreateAPIView(generics.ListCreateAPIView):
-#     queryset = InventoryItem.objects.all().order_by('-last_updated')
-#     serializer_class = InventoryItemSerializer
+# List + Create for Inventory management
+class InventoryItemListCreateAPIView(generics.ListCreateAPIView):
+    queryset = InventoryItem.objects.all().order_by('-last_updated')
+    serializer_class = InventoryItemSerializer
 
 
 

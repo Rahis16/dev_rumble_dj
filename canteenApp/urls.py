@@ -68,5 +68,6 @@ urlpatterns = [
     path('api/table-update-logs/', table_admin_views.TableUpdateLogListAPIView.as_view(), name='update-log-list'),
     path("api/inventory-items/", admin_views.InventoryItemListView.as_view(), name="inventory-list-create"),
     path("api/inventory-items/<int:pk>/", admin_views.InventoryItemRetrieveUpdateDestroyAPIView.as_view(), name="inventory-detail"),
+    path("api/create-inventory-item/", admin_views.InventoryItemListCreateAPIView.as_view(), name="create-inventory-item")
 ]
      

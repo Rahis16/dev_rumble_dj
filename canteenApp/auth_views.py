@@ -8,6 +8,9 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from datetime import datetime
+import json
+import base64
 
 User = get_user_model()
 
@@ -82,7 +85,15 @@ class AuthStatusView(APIView):
             user_id = token['user_id']
             user = User.objects.get(id=user_id)
 
-            return Response({
+             # Set public cookie data
+            public_data = {
+                "is_authenticated": True,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+                "username": user.username,
+            }
+            
+            response = Response({
                 "authenticated": True,
                 "username": user.username,
                 "is_staff": user.is_staff,
@@ -90,11 +101,49 @@ class AuthStatusView(APIView):
                 "email": user.email,
                 "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
                 "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
-                "exp": token["exp"],  # send token expiry to frontend
+                "exp": token["exp"],
             })
+            
+            # Calculate expiry in seconds (optional: use token.exp for dynamic timing)
+            max_age = int(token["exp"] - datetime.utcnow().timestamp())
+            public_data_json = json.dumps(public_data, separators=(',', ':'))
+            public_data_base64 = base64.b64encode(public_data_json.encode()).decode()
+            
+            # Set the public cookie
+            response.set_cookie(
+                key='user_status',
+                value=public_data_base64,
+                max_age=max_age,
+                secure=True,
+                httponly=False,  # So middleware can read
+                samesite='None',  # or 'Strict' if you want tighter control
+                path='/',
+            )
+
+            return response
+
+            # return Response({
+            #     "authenticated": True,
+            #     "username": user.username,
+            #     "is_staff": user.is_staff,
+            #     "is_superuser": user.is_superuser,
+            #     "email": user.email,
+            #     "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
+            #     "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
+            #     "exp": token["exp"],  # send token expiry to frontend
+            # })
 
         except Exception:
-            return Response({'authenticated': False}, status=401)
+            response = Response({'authenticated': False}, status=401)
+            response.delete_cookie(
+                key='user_status',
+                path='/',
+                samesite='None',
+            )
+            return response
+
+            # return Response({'authenticated': False}, status=401)
+
 
 
 

@@ -5,6 +5,8 @@ from .auth_views import CookieLoginView, CookieLogoutView
 from .payment_views import pay_with_wallet, pay_with_qr, pay_on_counter, PaymentListAPIView
 from . import admin_views 
 from . import table_admin_views
+from . import Oauth2_views
+from . import github_auth_views
 
 urlpatterns = [
     path('', views.home, name="home"),
@@ -15,6 +17,8 @@ urlpatterns = [
     path('auth/', include('dj_rest_auth.registration.urls')),  # Signup
     path('auth/status/', auth_views.AuthStatusView.as_view(), name='auth-status'),
     path('token/refresh/', auth_views.RefreshTokenView.as_view(), name='token-refresh'),
+    path("auth/google/", Oauth2_views.GoogleCookieLogin.as_view(), name="google-cookie-login"),
+    path("auth/github/", github_auth_views.GitHubCookieLogin.as_view(), name="github-login"),
 
 
     path("api/get-profile/", views.get_user_profile, name="get-user-profile"),

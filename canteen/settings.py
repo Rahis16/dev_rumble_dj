@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
 ]
 
 SITE_ID = 1
@@ -78,6 +79,7 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SAMESITE': 'none',
 }
 
+
 # ✅ ENABLE username again if you want it entered manually
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'   # Still using email to login
@@ -88,6 +90,18 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_SIGNUP_FIELDS = {
     'email': {'required': True},
     'username': {'required': True},
+}
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+    }
 }
 
 
@@ -139,6 +153,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://cms-nextapp-sandy.vercel.app",
 ]
 
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"  # or "same-origin-allow-popups"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

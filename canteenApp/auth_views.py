@@ -66,10 +66,9 @@ class CookieLogoutView(APIView):
         )
         
         response.delete_cookie(
-            key='user_status',
+            key='user_status2',
             path='/',
             samesite='None',
-            domain='cms-nextapp-sandy.vercel.app',
         )
 
         if hasattr(request, 'session'):
@@ -100,6 +99,9 @@ class AuthStatusView(APIView):
                 "username": user.username,
             }
             
+            public_data_json = json.dumps(public_data, separators=(',', ':'))
+            public_data_base64 = base64.b64encode(public_data_json.encode()).decode()
+            
             response = Response({
                 "authenticated": True,
                 "username": user.username,
@@ -109,23 +111,22 @@ class AuthStatusView(APIView):
                 "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
                 "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
                 "exp": token["exp"],
+                "user_status_encoded": public_data_base64,
             })
             
             # Calculate expiry in seconds (optional: use token.exp for dynamic timing)
             max_age = int(token["exp"] - datetime.utcnow().timestamp())
-            public_data_json = json.dumps(public_data, separators=(',', ':'))
-            public_data_base64 = base64.b64encode(public_data_json.encode()).decode()
+            
             
             # Set the public cookie
             response.set_cookie(
-                key='user_status',
+                key='user_status2',
                 value=public_data_base64,
                 max_age=max_age,
                 secure=True,
                 httponly=False,  # So middleware can read
                 samesite='None',  # or 'Strict' if you want tighter control
                 path='/',
-                domain='cms-nextapp-sandy.vercel.app',
             )
 
             return response
@@ -144,10 +145,9 @@ class AuthStatusView(APIView):
         except Exception:
             response = Response({'authenticated': False}, status=401)
             response.delete_cookie(
-                key='user_status',
+                key='user_status2',
                 path='/',
                 samesite='None',
-                domain='cms-nextapp-sandy.vercel.app',
             )
             return response
 

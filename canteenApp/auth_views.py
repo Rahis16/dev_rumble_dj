@@ -64,6 +64,13 @@ class CookieLogoutView(APIView):
             path='/',
             samesite='None'
         )
+        
+        response.delete_cookie(
+            key='user_status',
+            path='/',
+            samesite='None',
+            domain='cms-nextapp-sandy.vercel.app',
+        )
 
         if hasattr(request, 'session'):
             try:
@@ -118,6 +125,7 @@ class AuthStatusView(APIView):
                 httponly=False,  # So middleware can read
                 samesite='None',  # or 'Strict' if you want tighter control
                 path='/',
+                domain='cms-nextapp-sandy.vercel.app',
             )
 
             return response
@@ -139,6 +147,7 @@ class AuthStatusView(APIView):
                 key='user_status',
                 path='/',
                 samesite='None',
+                domain='cms-nextapp-sandy.vercel.app',
             )
             return response
 

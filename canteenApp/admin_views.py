@@ -25,7 +25,7 @@ from rest_framework import generics, filters
 from django.db import models
 from .admin_role_serializers import UserStatusSerializer
 from django.utils.encoding import smart_str
-
+from django.utils import timezone
 
 
 
@@ -803,3 +803,145 @@ class InventoryItemListView(generics.ListAPIView):
             ])
 
         return response    
+    
+    
+
+
+
+class DashboardReportsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        today = timezone.now().date()
+
+        # 1. Sales Report Data
+        def get_sales_data(period):
+            if period == 'daily':
+                days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+                daily_data = []
+                for day in days:
+                    orders = Order.objects.filter(ordered_at__date=day, status='confirmed')
+                    total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+                    order_count = orders.count()
+                    avg_order = total_sales / order_count if order_count else 0
+                    daily_data.append({
+                        'date': day.strftime('%Y-%m-%d'),
+                        'sales': total_sales,
+                        'orders': order_count,
+                        'avgOrder': round(avg_order, 2)
+                    })
+                return daily_data
+
+            elif period == 'weekly':
+                weekly_data = []
+                for i in range(4):
+                    start = today - timedelta(days=today.weekday()) - timedelta(weeks=i)
+                    end = start + timedelta(days=6)
+                    orders = Order.objects.filter(ordered_at__date__range=[start, end], status='confirmed')
+                    total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+                    order_count = orders.count()
+                    efficiency = min(100, round((order_count / 600) * 100))
+                    weekly_data.insert(0, {
+                        'week': f"Week {4 - i}",
+                        'sales': total_sales,
+                        'orders': order_count,
+                        'efficiency': efficiency
+                    })
+                return weekly_data
+
+            elif period == 'monthly':
+                monthly_data = []
+                for i in range(5, -1, -1):
+                    month_date = today.replace(day=1) - timedelta(days=30*i)
+                    month_orders = Order.objects.filter(
+                        ordered_at__month=month_date.month,
+                        ordered_at__year=month_date.year,
+                        status='confirmed')
+                    total_sales = month_orders.aggregate(total=Sum('total_price'))['total'] or 0
+                    order_count = month_orders.count()
+                    growth = 10  # placeholder, compute based on previous months
+                    monthly_data.append({
+                        'month': month_date.strftime('%B'),
+                        'sales': total_sales,
+                        'orders': order_count,
+                        'growth': growth
+                    })
+                return monthly_data
+
+        # 2. Expense Breakdown (Dummy/static until you implement real expense tracking)
+        expense_data = [
+            {"category": "Ingredients", "amount": 45000, "percentage": 35},
+            {"category": "Staff Salary", "amount": 38000, "percentage": 30},
+            {"category": "Utilities", "amount": 15000, "percentage": 12},
+            {"category": "Equipment", "amount": 12000, "percentage": 9},
+            {"category": "Maintenance", "amount": 8000, "percentage": 6},
+            {"category": "Others", "amount": 10000, "percentage": 8},
+        ]
+
+        # 3. Inventory Efficiency
+        inventory_items = InventoryItem.objects.filter(is_deleted=False)
+        inventory_data = [
+            {
+                'item': item.item_name,
+                'used': round(item.quantity * 0.9, 1),
+                'wasted': round(item.quantity * 0.1, 1),
+                'efficiency': 96
+            }
+            for item in inventory_items[:5]
+        ]
+
+        # 4. Report History (Dummy for now)
+        report_history = [
+            {
+                'id': 'RPT-2025-001',
+                'type': 'Sales Report',
+                'period': 'Weekly',
+                'dateRange': 'Jun 8-14, 2025',
+                'generatedOn': '2025-06-15 09:30',
+                'status': 'Sent',
+                'recipients': ['manager@canteen.com', 'admin@canteen.com'],
+                'size': '2.4 MB'
+            },
+            {
+                'id': 'RPT-2025-002',
+                'type': 'Inventory Report',
+                'period': 'Daily',
+                'dateRange': 'Jun 14, 2025',
+                'generatedOn': '2025-06-15 08:00',
+                'status': 'Generated',
+                'recipients': ['inventory@canteen.com'],
+                'size': '1.8 MB'
+            }
+        ]
+
+        # 5. Email Recipients by Role
+        role_emails = {}
+        roles = Role.objects.prefetch_related('users__user')
+        for role in roles:
+            emails = list(role.users.filter(status='active').values_list('user__email', flat=True))
+            if emails:
+                role_emails[role.name] = emails
+
+        # 6. Key Metrics (Dummy)
+        key_metrics = [
+            {"metric": "Average Daily Revenue", "value": "Rs. 18,500", "change": "+12.5%", "trend": "up"},
+            {"metric": "Food Cost Percentage", "value": "32%", "change": "-2.1%", "trend": "down"},
+            {"metric": "Customer Satisfaction", "value": "4.6/5", "change": "+0.3", "trend": "up"},
+            {"metric": "Inventory Turnover", "value": "12.5x", "change": "+1.2x", "trend": "up"},
+            {"metric": "Staff Productivity", "value": "89%", "change": "+5%", "trend": "up"},
+            {"metric": "Waste Percentage", "value": "4.2%", "change": "-1.1%", "trend": "down"},
+        ]
+
+        return Response({
+            'salesReportData': {
+                'daily': get_sales_data('daily'),
+                'weekly': get_sales_data('weekly'),
+                'monthly': get_sales_data('monthly')
+            },
+            'expenseData': expense_data,
+            'inventoryData': inventory_data,
+            'reportHistory': report_history,
+            'roleBasedEmails': role_emails,
+            'keyMetrics': key_metrics
+        })
+    

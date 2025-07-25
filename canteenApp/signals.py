@@ -112,7 +112,7 @@ def log_table_status_change(sender, instance, **kwargs):
 @receiver(post_save, sender=Reservation)
 def log_new_reservation(sender, instance, created, **kwargs):
     if created:
-        msg = f"New reservation for Table {instance.table_number} at {instance.time}"
+        msg = f"New reservation for Table {instance.table.number} at {instance.time}"
         UpdateLog.objects.create(message=msg, type="info")
 
 

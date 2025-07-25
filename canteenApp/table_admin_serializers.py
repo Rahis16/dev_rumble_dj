@@ -50,12 +50,51 @@ class TableSerializer(serializers.ModelSerializer):
         
 
 class ReservationSerializer(serializers.ModelSerializer):
-    tableNumber = serializers.IntegerField(source="table.number")
+    tableNumber = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Reservation
         fields = ['id', 'customer_name', 'phone', 'email', 'date', 'time', 'guests', 'tableNumber', 'status', 'special_requests', 'created_at']
+        
+    def get_tableNumber(self, obj):
+        return obj.table.number if obj.table else None
+    
+    def get_created_at(self, obj):
+        return localtime(obj.created_at).strftime("%Y-%m-%d - %H:%M:%S")
 
+
+class ReservationCreateSerializer(serializers.ModelSerializer):
+    tableNumber = serializers.IntegerField(write_only=True)
+
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'customer_name', 'phone', 'email', 'date', 'time', 'guests', 'status', 'special_requests', 'created_at', 'tableNumber']
+
+    def create(self, validated_data):
+        table_number = validated_data.pop('tableNumber')
+        try:
+            table = Table.objects.get(number=table_number)
+        except Table.DoesNotExist:
+            raise serializers.ValidationError({"tableNumber": "Invalid table number."})
+        reservation = Reservation.objects.create(table=table, **validated_data)
+        return reservation
+
+    def update(self, instance, validated_data):
+        table_number = validated_data.pop('tableNumber', None)
+        if table_number:
+            try:
+                table = Table.objects.get(number=table_number)
+                instance.table = table
+            except Table.DoesNotExist:
+                raise serializers.ValidationError({"tableNumber": "Invalid table number."})
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 class TableUpdateLogSerializer(serializers.ModelSerializer):
     time = serializers.SerializerMethodField()

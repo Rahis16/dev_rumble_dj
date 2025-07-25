@@ -65,12 +65,6 @@ class CookieLogoutView(APIView):
             samesite='None'
         )
         
-        response.delete_cookie(
-            key='user_status2',
-            path='/',
-            samesite='None',
-        )
-
         if hasattr(request, 'session'):
             try:
                 request.session.flush()
@@ -114,44 +108,10 @@ class AuthStatusView(APIView):
                 "user_status_encoded": public_data_base64,
             })
             
-            # Calculate expiry in seconds (optional: use token.exp for dynamic timing)
-            max_age = int(token["exp"] - datetime.utcnow().timestamp())
-            
-            
-            # Set the public cookie
-            response.set_cookie(
-                key='user_status2',
-                value=public_data_base64,
-                max_age=max_age,
-                secure=True,
-                httponly=False,  # So middleware can read
-                samesite='None',  # or 'Strict' if you want tighter control
-                path='/',
-            )
-
             return response
-
-            # return Response({
-            #     "authenticated": True,
-            #     "username": user.username,
-            #     "is_staff": user.is_staff,
-            #     "is_superuser": user.is_superuser,
-            #     "email": user.email,
-            #     "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
-            #     "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
-            #     "exp": token["exp"],  # send token expiry to frontend
-            # })
 
         except Exception:
-            response = Response({'authenticated': False}, status=401)
-            response.delete_cookie(
-                key='user_status2',
-                path='/',
-                samesite='None',
-            )
-            return response
-
-            # return Response({'authenticated': False}, status=401)
+            return Response({'authenticated': False}, status=401)
 
 
 

@@ -5,8 +5,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from datetime import datetime
-import json
-import base64
 
 User = get_user_model()
 
@@ -23,17 +21,7 @@ class GoogleCookieLogin(SocialLoginView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
-        # Public info
-        public_data = {
-            "is_authenticated": True,
-            "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,
-            "username": user.username,
-        }
-
         max_age = int(access["exp"] - datetime.utcnow().timestamp())
-        public_data_json = json.dumps(public_data, separators=(',', ':'))
-        public_data_base64 = base64.b64encode(public_data_json.encode()).decode()
 
         # ✅ Set Cookies like your normal login
         response.set_cookie(
@@ -54,14 +42,5 @@ class GoogleCookieLogin(SocialLoginView):
             path='/',
             max_age=86400
         )
-        response.set_cookie(
-            key='user_status',
-            value=public_data_base64,
-            httponly=False,
-            secure=True,
-            samesite='None',
-            path='/',
-            max_age=max_age
-        )
-
+        
         return response

@@ -80,6 +80,7 @@ SIMPLE_JWT = {
 }
 
 
+
 # ✅ ENABLE username again if you want it entered manually
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'   # Still using email to login
@@ -101,9 +102,17 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {
             "access_type": "online",
         },
-    }
+    },
+    "github": {
+        "SCOPE": [
+            "read:user",
+            "user:email",
+        ],
+        # You can add AUTH_PARAMS here if needed, e.g. "allow_signup": "true"
+    },
 }
 
+SOCIALACCOUNT_ADAPTER = 'canteenApp.adapters.CustomSocialAccountAdapter'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

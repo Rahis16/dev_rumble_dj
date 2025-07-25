@@ -2,17 +2,44 @@
 
 from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
+import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from datetime import datetime
-import json
-import base64
 
 User = get_user_model()
 
 class GitHubCookieLogin(SocialLoginView):
     adapter_class = GitHubOAuth2Adapter
+    
+    def post(self, request, *args, **kwargs):
+        code = request.data.get('code')
+        if not code:
+            return Response({"error": "Missing code"}, status=400)
+
+        # Exchange code for access token
+        client_id = 'Ov23liP5fwlwEjWUsogo'
+        client_secret = '1fbbbe89012d785e757904c12f99bc1f8028ce2e'
+        token_url = "https://github.com/login/oauth/access_token"
+
+        token_res = requests.post(token_url, data={
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'code': code,
+        }, headers={'Accept': 'application/json'})
+
+        token_data = token_res.json()
+        access_token = token_data.get('access_token')
+
+        if not access_token:
+            return Response({"error": "Failed to get access token"}, status=400)
+
+        # Replace 'access_token' in request.data to pass to adapter
+        request.data['access_token'] = access_token
+
+        # Call the usual SocialLoginView.post() with the updated data
+        return super().post(request, *args, **kwargs)
 
     def get_response(self):
         response = super().get_response()
@@ -23,17 +50,7 @@ class GitHubCookieLogin(SocialLoginView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
-        # Public info
-        public_data = {
-            "is_authenticated": True,
-            "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,
-            "username": user.username,
-        }
-
         max_age = int(access["exp"] - datetime.utcnow().timestamp())
-        public_data_json = json.dumps(public_data, separators=(',', ':'))
-        public_data_base64 = base64.b64encode(public_data_json.encode()).decode()
 
         # ✅ Set cookies (same as Google flow)
         response.set_cookie(
@@ -54,14 +71,5 @@ class GitHubCookieLogin(SocialLoginView):
             path='/',
             max_age=86400  # 1 day
         )
-        response.set_cookie(
-            key='user_status',
-            value=public_data_base64,
-            httponly=False,
-            secure=True,
-            samesite='None',
-            path='/',
-            max_age=max_age
-        )
-
+        
         return response

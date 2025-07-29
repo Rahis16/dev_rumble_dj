@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 # from django.contrib.auth.models import User
 from django.conf import settings
-from .models import UserProfile, Wallet, Permission, Role,  Table, Reservation, Order, TableUpdateLog as UpdateLog
+from .models import UserProfile, Wallet, Permission, Role,  Table, Reservation, Order, TableUpdateLog as UpdateLog, Notification
 from django.db.models.signals import post_migrate
 
 
@@ -126,3 +126,30 @@ def log_order_status_change(sender, instance, **kwargs):
     if previous.status != instance.status and instance.status == "completed":
         msg = f"Table {instance.table.number} order completed - Rs. {instance.total_amount}"
         UpdateLog.objects.create(message=msg, type="info")        
+        
+        
+
+@receiver(post_save, sender=Order)
+def create_order_notification(sender, instance, created, **kwargs):
+    if created:
+        Notification.objects.create(
+            user=instance.user,
+            icon='utensils',
+            title='Order Placed Successfully',
+            message=f"Your order #{instance.pk} has been placed successfully.",
+        )
+  
+
+
+@receiver(post_save, sender=Order)
+def order_delivered_notification(sender, instance, created, **kwargs):
+    if not created and instance.status == 'delivered':
+        message = f"Your order #{instance.pk} has been delivered."
+        # Avoid duplicate notification for the same user
+        if not Notification.objects.filter(title="Order Delivered", message=message, user=instance.user).exists():
+            Notification.objects.create(
+                user=instance.user,
+                icon='check_circle',
+                title='Order Delivered',
+                message=message,
+            )

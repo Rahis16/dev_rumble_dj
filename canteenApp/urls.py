@@ -30,15 +30,20 @@ urlpatterns = [
     path('api/cart/add/', views.add_to_cart, name='add_to_cart'),
     path('api/cart/items/', views.fetch_cart_items, name='fetch-cart-items'),
     path('api/cart/update/', views.cart_update, name='cart_update'),
+    path('api/notifications/unread-count/', views.unread_notification_count, name='unread_notification_count'),
+    path('api/cart/items/count/', views.cart_item_count, name='cart_item_count'),
+    path('api/notifications/mark-read', views.mark_notifications_as_read, name='mark-notifications-read'),
     path('api/cart/remove/', views.cart_remove, name='cart_remove'),
     path('api/checkout/', views.checkout, name='checkout'),
-    
+    path('api/notifications/', views.NotificationListView.as_view(), name='notifications'),
     path('api/orders/', views.user_orders_view, name='user-orders'),
     
     path('api/pay/wallet/', pay_with_wallet),
     path('api/pay/qr/', pay_with_qr),
     path('api/pay/counter/', pay_on_counter),
     path('api/payments/', PaymentListAPIView.as_view(), name='payment-list'),
+    
+   
     
     path('fetch-tables/', views.fetch_tables, name='fetch-tables'),
     
@@ -66,6 +71,8 @@ urlpatterns = [
     
     path('api/tables/', table_admin_views.TableListAPIView.as_view(), name='table-list'),
     path('api/tables/<int:pk>/', table_admin_views.TableStatusUpdateAPIView.as_view(), name='table-status-update'),
+    path('api/tables/create/', table_admin_views.TableListCreateView.as_view(), name='table-create'),
+    path('api/tables/<int:pk>/', table_admin_views.TableRetrieveUpdateDestroyView.as_view(), name='table-detail'),
     path('api/reservations/', table_admin_views.ReservationListAPIView.as_view(), name='reservation-list'),
     path('api/reservations/create/', table_admin_views.ReservationCreateAPIView.as_view(), name='reservation-create'),
     path('api/reservations/<int:id>/', table_admin_views.ReservationUpdateDeleteAPIView.as_view(), name='reservation-update-delete'),
@@ -74,5 +81,6 @@ urlpatterns = [
     path("api/inventory-items/<int:pk>/", admin_views.InventoryItemRetrieveUpdateDestroyAPIView.as_view(), name="inventory-detail"),
     path("api/create-inventory-item/", admin_views.InventoryItemListCreateAPIView.as_view(), name="create-inventory-item"),
     path('dashboard-reports/', admin_views.DashboardReportsAPIView.as_view(), name='dashboard-reports'),
+    
 ]
      

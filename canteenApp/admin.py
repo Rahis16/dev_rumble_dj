@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, InventoryItem, Role, Permission, Reservation
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, TransactionHistory, InventoryItem, Role, Permission, Reservation, Notification
 
 
 @admin.register(UserProfile)
@@ -196,4 +196,10 @@ class PermissionAdmin(admin.ModelAdmin):
     
     
 
-    
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'icon', 'unread', 'time')
+    list_filter = ('icon', 'unread', 'time')
+    search_fields = ('title', 'message')
+    ordering = ('-time',)
+    readonly_fields = ('time',)    

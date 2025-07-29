@@ -4,13 +4,21 @@ from rest_framework import generics, status, views
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Table, Reservation, TableUpdateLog
-from .table_admin_serializers import TableSerializer, ReservationSerializer, TableUpdateLogSerializer, ReservationCreateSerializer
+from .table_admin_serializers import TableSerializer, ReservationSerializer, TableUpdateLogSerializer, ReservationCreateSerializer, TableCreateSerializer
 
 
 class TableListAPIView(generics.ListAPIView):
     queryset = Table.objects.all()
     serializer_class = TableSerializer
-
+    
+class TableListCreateView(generics.ListCreateAPIView):
+    queryset = Table.objects.all()
+    serializer_class = TableCreateSerializer
+    
+class TableRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Table.objects.all()
+    serializer_class = TableCreateSerializer    
+    
 
 class TableStatusUpdateAPIView(views.APIView):
     def patch(self, request, pk):
@@ -60,6 +68,7 @@ class ReservationUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Reservation.objects.all()
     serializer_class = ReservationCreateSerializer
     lookup_field = 'id'
+
 
 
 class TableUpdateLogListAPIView(generics.ListAPIView):

@@ -81,6 +81,28 @@ class UserProfile(models.Model):
         
         #usage: top_profiles = UserProfile.top_by_order_type('delivered')
     
+
+class Notification(models.Model):
+    ICON_CHOICES = [
+        ('utensils', 'Utensils'),
+        ('wallet', 'Wallet'),
+        ('check_circle', 'Check Circle'),
+        ('exclamation_circle', 'Exclamation Circle'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    icon = models.CharField(max_length=50, choices=ICON_CHOICES)
+    title = models.CharField(max_length=100)
+    message = models.TextField()
+    time = models.DateTimeField(auto_now_add=True)
+    unread = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
     
 
 class Wallet(models.Model):

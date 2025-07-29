@@ -98,6 +98,7 @@ class AuthStatusView(APIView):
             
             response = Response({
                 "authenticated": True,
+                "userId": user.id,
                 "username": user.username,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,

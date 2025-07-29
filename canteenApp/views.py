@@ -11,16 +11,15 @@ from dj_rest_auth.views import LoginView
 from datetime import timedelta
 from rest_framework_simplejwt.tokens import RefreshToken
 from dj_rest_auth.views import LogoutView
-from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, Wallet, TransactionHistory
+from .models import Product, Cart, CartItem, Order, OrderItem, UserProfile, Wallet, Payment, PaymentMethod, Table, Wallet, TransactionHistory, Notification
 from decimal import Decimal
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
@@ -28,6 +27,7 @@ from django.db import transaction
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.paginator import Paginator
 from django.utils.timezone import localtime
+from .serializers import NotificationSerializer
 
 
 User = get_user_model()
@@ -502,4 +502,39 @@ def user_orders_view(request):
             'next': cancelled_paginator.get_next_link(),
             'previous': cancelled_paginator.get_previous_link(),
         },
+    })
+    
+    
+    
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user).order_by('-time')[:20]
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)    
+    
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def unread_notification_count(request):
+    count = Notification.objects.filter(user=request.user, unread=True).count()
+    return Response({'count': count})    
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cart_item_count(request):
+    count = request.user.cart.items.count()  # adjust as per your model
+    return Response({'count': count})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_notifications_as_read(request):
+    user = request.user
+    updated_count = Notification.objects.filter(user=user, unread=True).update(unread=False)
+    return Response({
+        'message': f'{updated_count} notification(s) marked as read.'
     })

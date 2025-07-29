@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from .models import Product, Category, CartItem, Order, OrderItem, UserProfile, Payment
+from .models import Product, Category, CartItem, Order, OrderItem, UserProfile, Payment, Notification
 from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
+from django.utils.timesince import timesince
+from django.utils.timezone import now
   
   
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -124,4 +126,14 @@ class OrderSerializer2(serializers.ModelSerializer):
     def get_table_number(self, obj):
         return obj.table.number if obj.table else None         
     
-     
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    time_ago = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'icon', 'title', 'message', 'unread', 'time_ago']
+
+    def get_time_ago(self, obj):
+        return timesince(obj.time, now()) + " ago"     

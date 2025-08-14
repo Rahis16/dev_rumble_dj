@@ -19,8 +19,8 @@ class GitHubCookieLogin(SocialLoginView):
             return Response({"error": "Missing code"}, status=400)
 
         # Exchange code for access token
-        client_id = 'Ov23liP5fwlwEjWUsogo'
-        client_secret = '1fbbbe89012d785e757904c12f99bc1f8028ce2e'
+        client_id = 'Ov23li2EaARy6c1mz8NK'
+        client_secret = '6fce52903bb75ac5adaaf9de939353abc81cce70'
         token_url = "https://github.com/login/oauth/access_token"
 
         token_res = requests.post(token_url, data={

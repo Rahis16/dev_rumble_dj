@@ -6,7 +6,7 @@ from . import Oauth2_views
 from . import github_auth_views
 
 urlpatterns = [
-    # path('', views.home, name="home"),
+    path('', views.home, name="home"),
     
     # drf jwt auth urls
     path('auth/login/', CookieLoginView.as_view(), name='rest_login'),
@@ -16,5 +16,8 @@ urlpatterns = [
     path('token/refresh/', auth_views.RefreshTokenView.as_view(), name='token-refresh'),
     path("auth/google/", Oauth2_views.GoogleCookieLogin.as_view(), name="google-cookie-login"),
     path("auth/github/", github_auth_views.GitHubCookieLogin.as_view(), name="github-login"),
+    
+    #MVP urls for app logics -----------------------------------------------------------
+    
 ]
      

@@ -103,8 +103,6 @@ class AuthStatusView(APIView):
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
                 "email": user.email,
-                "wallet_balance": str(user.wallet.balance) if hasattr(user, 'wallet') else "0",
-                "photo": user.profile.profile_pic.url if user.profile.profile_pic else None,
                 "exp": token["exp"],
                 "user_status_encoded": public_data_base64,
             })

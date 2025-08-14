@@ -153,13 +153,13 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://smartcoderrahis.pythonanywhere.com",
-    "https://cms-nextapp-sandy.vercel.app",
+    "https://dev-rumble-nextapp.vercel.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "https://smartcoderrahis.pythonanywhere.com",
-    "https://cms-nextapp-sandy.vercel.app",
+    "https://dev-rumble-nextapp.vercel.app",
 ]
 
 

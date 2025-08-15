@@ -5,7 +5,7 @@ from .auth_views import CookieLoginView, CookieLogoutView
 from . import Oauth2_views
 from . import github_auth_views
 from .views import *
-from . import ai_views
+from .ai_views import transcribe_and_reply_2
 
 
 urlpatterns = [
@@ -29,7 +29,7 @@ urlpatterns = [
     # ai
     path(
         "api/transcribe-and-reply-2/",
-        ai_views.transcribe_and_reply_2,
+        transcribe_and_reply_2,
         name="transcribe-and-reply_2",
     ),
     # MVP urls for app logics -----------------------------------------------------------

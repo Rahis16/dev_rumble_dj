@@ -25,6 +25,7 @@ class UserProfile(models.Model):
 
     # Fields
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=100, blank=True, null=True)
     photo = models.ImageField(upload_to="profile_photos/", blank=True, null=True)
     semester = models.PositiveIntegerField(
         choices=SEMESTER_CHOICES, blank=True, null=True

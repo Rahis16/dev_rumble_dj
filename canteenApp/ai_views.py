@@ -4,6 +4,13 @@ from django.core.files.storage import default_storage
 import base64
 import requests
 from .models import ChatMessageAi
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
+from rest_framework.permissions import AllowAny
+# from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 
 HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
@@ -19,6 +26,8 @@ ELEVENLABS_VOICE_ID = "jqcCZkN6Knx8BJ5TBdYR"
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])  # disables any authentication classes
 def transcribe_and_reply_2(request):
 
     GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"

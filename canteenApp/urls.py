@@ -33,6 +33,7 @@ urlpatterns = [
         name="transcribe-and-reply_2",
     ),
     # MVP urls for app logics -----------------------------------------------------------
+    path("my-profile/", UserProfileDetailUpdateView.as_view(), name="my-profile"),
     path(
         "friendrequests/",
         FriendRequestListCreateAPIView.as_view(),

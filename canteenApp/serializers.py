@@ -5,6 +5,11 @@ User = get_user_model()
 
 
 # serializers here
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = "__all__"
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

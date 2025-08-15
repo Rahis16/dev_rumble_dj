@@ -6,11 +6,24 @@ from django.contrib.auth import get_user_model
 from .models import *
 from .serializers import *
 from rest_framework.views import APIView
+from rest_framework import generics, permissions
+from rest_framework.exceptions import NotFound
 
 User = get_user_model()
 
 def home(request):
     return HttpResponse("<h1>This is Backend for Dev Rumble made in Django!</h1>")
+
+
+class UserProfileDetailUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+        
+    def get_object(self):
+        try:
+            return self.request.user.userprofile
+        except UserProfile.DoesNotExist:
+            raise NotFound("Profile not found for the logged-in user.")
 
 
 # ------------------ List & Send Friend Requests ------------------

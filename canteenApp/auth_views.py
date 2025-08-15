@@ -103,6 +103,7 @@ class AuthStatusView(APIView):
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
                 "email": user.email,
+                "photo": user.userprofile.photo.url if user.userprofile.photo else None,
                 "exp": token["exp"],
                 "user_status_encoded": public_data_base64,
             })

@@ -22,7 +22,7 @@ class UserProfileAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             "User Info",
-            {"fields": ("user", "lcid", "faculty", "semester", "year", "gender")},
+            {"fields": ("user", "full_name", "lcid", "faculty", "semester", "year", "gender")},
         ),
         (
             "Contact Details",

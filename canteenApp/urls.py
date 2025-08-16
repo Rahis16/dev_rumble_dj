@@ -34,6 +34,7 @@ urlpatterns = [
     ),
     # MVP urls for app logics -----------------------------------------------------------
     path("my-profile/", UserProfileDetailUpdateView.as_view(), name="my-profile"),
+    path("update-profile/", views.update_profile, name="update-profile"),
     path(
         "friendrequests/",
         FriendRequestListCreateAPIView.as_view(),

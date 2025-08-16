@@ -8,6 +8,8 @@ from .serializers import *
 from rest_framework.views import APIView
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
+from rest_framework.decorators import api_view
+
 
 User = get_user_model()
 
@@ -25,6 +27,22 @@ class UserProfileDetailUpdateView(generics.RetrieveUpdateAPIView):
         except UserProfile.DoesNotExist:
             raise NotFound("Profile not found for the logged-in user.")
 
+@api_view(['PUT'])
+def update_profile(request):
+    user = request.user
+    profile = user.userprofile
+
+    # Update all fields except 'user'
+    for field, value in request.data.items():
+        if field == "user":
+            continue
+        if field == "photo" and 'photo' in request.FILES:
+            setattr(profile, field, request.FILES['photo'])
+        elif hasattr(profile, field):
+            setattr(profile, field, value)
+
+    profile.save()
+    return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
 
 # ------------------ List & Send Friend Requests ------------------
 class FriendRequestListCreateAPIView(generics.ListCreateAPIView):

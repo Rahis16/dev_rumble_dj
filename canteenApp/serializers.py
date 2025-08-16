@@ -6,6 +6,8 @@ User = get_user_model()
 
 # serializers here
 class UserProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    
     class Meta:
         model = UserProfile
         fields = "__all__"

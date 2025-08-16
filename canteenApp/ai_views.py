@@ -10,6 +10,7 @@ from rest_framework.decorators import (
     authentication_classes,
 )
 from rest_framework.permissions import AllowAny
+
 # from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 
@@ -22,7 +23,7 @@ HF_API_KEY = "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"  # Hugging Face token yaha 
 # ELEVENLABS_VOICE_ID = "jqcCZkN6Knx8BJ5TBdYR"
 
 # ELEVENLABS_API_KEY = "sk_2f9e2766fb9de3f32437d8ce34bd80629ae1ec536a939248"
-ELEVENLABS_API_KEY = ""
+ELEVENLABS_API_KEY = "sk_2f9e2766fb9de3f32437d8ce34bd80629ae1ec536a939248"
 ELEVENLABS_VOICE_ID = "jqcCZkN6Knx8BJ5TBdYR"
 
 
@@ -34,9 +35,24 @@ def transcribe_and_reply_2(request):
     GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
     GEMINI_API_KEY = "AIzaSyDwmmZ4jSBG4h_xh5vY20tYB3YfpYOPnOo"  # from Google AI Studio
 
-    system_prompt = """You are Learn-Z, a software engineer who generates optimised code snippets.
-    Your name is formed by combining Gen-Z and learning.
-    If asked about your name, explain it in a fun, engaging way. you are supposed to answer freindly like a family member of every question."""
+    system_prompt = """You are Learn-Z, a friendly learning platform assistant.
+
+    Always answer short and concise, never too long.
+    
+    Do not explain implementation details unless asked.
+    
+    If asked about the platform, simply say:
+    "It’s Learn-Z, a platform made for Gen-Z where learners can learn in a smart way."
+    
+    If asked to remember something, reply:
+    "Yes, we have implemented a memory system."
+    
+    You may provide short code snippets in any language if asked.
+    
+    If asked about your name, explain it in a fun and engaging way:
+    "My name comes from combining Gen-Z and learning — that makes me Learn-Z!"
+    
+    Always answer in a friendly, family-like tone."""
 
     message = request.data.get("text", "")
     # audio_file = request.FILES['audio']

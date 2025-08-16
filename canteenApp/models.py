@@ -34,7 +34,7 @@ class UserProfile(models.Model):
         max_length=100, choices=FACULTY_CHOICES, blank=True, null=True
     )
     year = models.PositiveIntegerField(choices=YEAR_CHOICES, blank=True, null=True)
-    lcid = models.CharField(max_length=50, unique=True, verbose_name="College ID")
+    lcid = models.CharField(max_length=50, unique=True, verbose_name="College ID", blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     temp_address = models.CharField(
         max_length=255, blank=True, null=True, verbose_name="Temporary Address"

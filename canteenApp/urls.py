@@ -120,16 +120,16 @@ urlpatterns = [
     path("api/videos/<slug:slug>/", CourseVideoDetailView.as_view(), name="video-detail"),
     
     # one-classroom-per-user
-    path("classroom/", ClassroomMeView.as_view(), name="classroom-me"),
-    path("classroom/items/", ClassroomItemAddView.as_view(), name="classroom-item-add"),
-    path("classroom/items/list/", ClassroomItemListView.as_view(), name="classroom-item-list"),
-    path("classroom/items/<int:item_id>/", ClassroomItemDeleteView.as_view(), name="classroom-item-delete"),
-    path("classroom/items/<int:item_id>/progress/", ClassroomItemProgressView.as_view(), name="classroom-item-progress"),
-    path("classroom/set-active/", ClassroomSetActiveVideoView.as_view(), name="classroom-set-active"),
+    path("api/classroom/", ClassroomMeView.as_view(), name="classroom-me"),
+    path("api/classroom/items/", ClassroomItemAddView.as_view(), name="classroom-item-add"),
+    path("api/classroom/items/list/", ClassroomItemListView.as_view(), name="classroom-item-list"),
+    path("api/classroom/items/<int:item_id>/", ClassroomItemDeleteView.as_view(), name="classroom-item-delete"),
+    path("api/classroom/items/<int:item_id>/progress/", ClassroomItemProgressView.as_view(), name="classroom-item-progress"),
+    path("api/classroom/set-active/", ClassroomSetActiveVideoView.as_view(), name="classroom-set-active"),
 
     # videos
-    path("videos/<slug:slug>/context/", VideoContextRetrieveView.as_view(), name="video-context"),
-    path("videos/<slug:slug>/context/edit/", VideoContextUpsertView.as_view(), name="video-context-upsert"),
+    path("api/videos/<slug:slug>/context/", VideoContextRetrieveView.as_view(), name="video-context"),
+    path("api/videos/<slug:slug>/context/edit/", VideoContextUpsertView.as_view(), name="video-context-upsert"),
 
     
 ]

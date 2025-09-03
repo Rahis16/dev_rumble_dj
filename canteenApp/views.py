@@ -23,14 +23,14 @@ class UserProfileDetailUpdateView(generics.RetrieveUpdateAPIView):
         
     def get_object(self):
         try:
-            return self.request.user.userprofile
+            return self.request.user.profile
         except UserProfile.DoesNotExist:
             raise NotFound("Profile not found for the logged-in user.")
 
 @api_view(['PUT'])
 def update_profile(request):
     user = request.user
-    profile = user.userprofile
+    profile = user.profile
 
     # Update all fields except 'user'
     for field, value in request.data.items():

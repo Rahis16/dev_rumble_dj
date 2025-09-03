@@ -36,10 +36,10 @@ class FriendRequestCreateSerializer(serializers.ModelSerializer):
 class PeerSerializer(serializers.ModelSerializer):
     skills = serializers.SerializerMethodField()
     interests = serializers.SerializerMethodField()
-    photo = serializers.ImageField(source="userprofile.photo", read_only=True)
-    semester = serializers.IntegerField(source="userprofile.semester", read_only=True)
-    faculty = serializers.CharField(source="userprofile.faculty", read_only=True)
-    year = serializers.IntegerField(source="userprofile.year", read_only=True)
+    photo = serializers.ImageField(source="profile.photo", read_only=True)
+    semester = serializers.IntegerField(source="profile.semester", read_only=True)
+    faculty = serializers.CharField(source="profile.faculty", read_only=True)
+    year = serializers.IntegerField(source="profile.year", read_only=True)
 
     class Meta:
         model = User

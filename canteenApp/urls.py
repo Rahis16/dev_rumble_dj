@@ -6,6 +6,13 @@ from . import Oauth2_views
 from . import github_auth_views
 from .views import *
 from .ai_views import transcribe_and_reply_2
+from .completeprofileviews import (
+    FieldListView,
+    InterestListByFieldView,
+    SkillListByFieldView,
+    SaveSkillsInterestsView,
+    GetMySelectionView,
+)
 
 
 urlpatterns = [
@@ -72,4 +79,25 @@ urlpatterns = [
     # create team
     path("teams/create/", TeamCreateAPIView.as_view(), name="team-create"),
     path("teams/<int:pk>/delete/", TeamDeleteAPIView.as_view(), name="team-delete"),
+    
+    
+    # Catalog of recommendation at initial profile creation
+    path("api/catalog/fields/", FieldListView.as_view(), name="catalog-fields"),
+    path(
+        "api/catalog/interests/",
+        InterestListByFieldView.as_view(),
+        name="catalog-interests-by-field",
+    ),
+    path(
+        "api/catalog/skills/",
+        SkillListByFieldView.as_view(),
+        name="catalog-skills-by-field",
+    ),
+    # User selection
+    path(
+        "api/save-skills-interests/",
+        SaveSkillsInterestsView.as_view(),
+        name="save-skills-interests",
+    ),
+    path("api/my-selection/", GetMySelectionView.as_view(), name="get-my-selection"),
 ]

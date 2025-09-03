@@ -39,55 +39,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
     photo_preview.allow_tags = True
     photo_preview.short_description = "Photo Preview"
-
-
-# portfolio Section
-class SkillInline(admin.TabularInline):
-    model = Skill
-    extra = 1
-
-
-class InterestInline(admin.TabularInline):
-    model = Interest
-    extra = 1
-
-
-class ProjectInline(admin.StackedInline):
-    model = Project
-    extra = 1
-    readonly_fields = ("created_at",)
-
-
-@admin.register(Portfolio)
-class PortfolioAdmin(admin.ModelAdmin):
-    list_display = ("user", "short_bio")
-    search_fields = ("user__username", "bio")
-    inlines = [SkillInline, InterestInline, ProjectInline]
-
-    def short_bio(self, obj):
-        return (obj.bio[:50] + "...") if obj.bio and len(obj.bio) > 50 else obj.bio
-
-    short_bio.short_description = "Bio"
-
-
-@admin.register(Skill)
-class SkillAdmin(admin.ModelAdmin):
-    list_display = ("name", "portfolio")
-    search_fields = ("name", "portfolio__user__username")
-
-
-@admin.register(Interest)
-class InterestAdmin(admin.ModelAdmin):
-    list_display = ("name", "portfolio")
-    search_fields = ("name", "portfolio__user__username")
-
-
-@admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("title", "portfolio", "link", "created_at")
-    search_fields = ("title", "portfolio__user__username")
-    list_filter = ("created_at",)
-
+    
 
 @admin.register(FriendRequest)
 class FriendRequestAdmin(admin.ModelAdmin):

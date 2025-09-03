@@ -1,5 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify
+from django.conf import settings
+
+
+class Field(models.Model):
+    name = models.CharField(max_length=120, unique=True , default="IT")
+    slug = models.SlugField(max_length=140, unique=True, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def _str_(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
 
 class UserProfile(models.Model):
@@ -24,7 +42,7 @@ class UserProfile(models.Model):
     YEAR_CHOICES = [(i, f"Year {i}") for i in range(1, 5)]
 
     # Fields
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     full_name = models.CharField(max_length=100, blank=True, null=True)
     photo = models.ImageField(upload_to="profile_photos/", blank=True, null=True)
     semester = models.PositiveIntegerField(
@@ -49,55 +67,87 @@ class UserProfile(models.Model):
     school = models.CharField(max_length=100, blank=True, null=True)
     college = models.CharField(max_length=100, blank=True, null=True)
     background = models.TextField(blank=True, null=True)
+    selected_field = models.ForeignKey(
+        Field, null=True, blank=True, on_delete=models.SET_NULL, related_name="users"
+    )
 
     def __str__(self):
         return self.user.username
 
 
-# portfolio
-class Portfolio(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="portfolio"
+class Interest2(models.Model):
+    name = models.CharField(max_length=120)
+    field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="interests")
+
+    class Meta:
+        unique_together = ("name", "field")
+        ordering = ["name"]
+
+    def _str_(self):
+        return f"{self.name} ({self.field.name})"
+
+
+class Skill2(models.Model):
+    name = models.CharField(max_length=120)
+    field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="skills")
+
+    class Meta:
+        unique_together = ("name", "field")
+        ordering = ["name"]
+
+    def _str_(self):
+        return f"{self.name} ({self.field.name})"
+
+
+# class UserProfile(models.Model):
+#     user = models.OneToOneField(
+#         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+#     )
+#     selected_field = models.ForeignKey(
+#         Field, null=True, blank=True, on_delete=models.SET_NULL, related_name="users"
+#     )
+
+#     def _str_(self):
+#         return f"Profile<{self.user}>"
+
+
+class UserInterest(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_interests",
     )
-    bio = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.user.username}'s Portfolio"
-
-
-# skills
-class Skill(models.Model):
-    portfolio = models.ForeignKey(
-        Portfolio, on_delete=models.CASCADE, related_name="skills"
+    interest = models.ForeignKey(
+        Interest2, on_delete=models.CASCADE, related_name="user_links"
     )
-    name = models.CharField(max_length=100)
 
-    def __str__(self):
-        return f"{self.name} ({self.portfolio.user.username})"
+    class Meta:
+        unique_together = ("user", "interest")
 
 
-class Interest(models.Model):
-    portfolio = models.ForeignKey(
-        Portfolio, on_delete=models.CASCADE, related_name="interests"
+class UserSkill(models.Model):
+    BEGINNER = "Beginner"
+    INTERMEDIATE = "Intermediate"
+    ADVANCED = "Advanced"
+    SKILL_LEVELS = [
+        (BEGINNER, "Beginner"),
+        (INTERMEDIATE, "Intermediate"),
+        (ADVANCED, "Advanced"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_skills"
     )
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return f"{self.name} ({self.portfolio.user.username})"
-
-
-class Project(models.Model):
-    portfolio = models.ForeignKey(
-        Portfolio, on_delete=models.CASCADE, related_name="projects"
+    skill = models.ForeignKey(
+        Skill2, on_delete=models.CASCADE, related_name="user_links"
     )
-    title = models.CharField(max_length=150)
-    description = models.TextField(blank=True, null=True)
-    link = models.URLField(blank=True, null=True)
-    file = models.FileField(upload_to="project_files/", blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    level = models.CharField(max_length=20, choices=SKILL_LEVELS, default=BEGINNER)
 
-    def __str__(self):
-        return f"{self.title} ({self.portfolio.user.username})"
+    class Meta:
+        unique_together = ("user", "skill")
+
+
+# completet profile model completed here---------------------------------------
 
 
 # peer finder section

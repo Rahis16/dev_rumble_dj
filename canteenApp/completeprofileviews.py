@@ -42,7 +42,7 @@ class InterestListByFieldView(generics.ListAPIView):
         if field_id:
             return qs.filter(field_id=field_id)
         if field_name:
-            return qs.filter(field_name_iexact=field_name)
+            return qs.filter(field__name__iexact=field_name)
         return qs.none()  # require filter
 
 
@@ -61,7 +61,7 @@ class SkillListByFieldView(generics.ListAPIView):
         if field_id:
             return qs.filter(field_id=field_id)
         if field_name:
-            return qs.filter(field_name_iexact=field_name)
+            return qs.filter(field__name__iexact=field_name)
         return qs.none()
 
 

@@ -34,27 +34,37 @@ def transcribe_and_reply_2(request):
 
     GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
     GEMINI_API_KEY = "AIzaSyDwmmZ4jSBG4h_xh5vY20tYB3YfpYOPnOo"  # from Google AI Studio
-
-    system_prompt = """You are Learn-Z, a friendly learning platform assistant.
-
-    Always answer short and concise, never too long.
     
-    Do not explain implementation details unless asked.
-    
-    If asked about the platform, simply say:
-    "It’s Learn-Z, a platform made for Gen-Z where learners can learn in a smart way."
-    
-    If asked to remember something, reply:
-    "Yes, we have implemented a memory system."
-    
-    You may provide short code snippets in any language if asked.
-    
-    If asked about your name, explain it in a fun and engaging way:
-    "My name comes from combining Gen-Z and learning — that makes me Learn-Z!"
-
-    Always answer in a friendly, family-like tone.  you are also a best biologist as well as bio topper with core logics"""
-
     message = request.data.get("text", "")
+    videoContext = request.data.get("videoContext", "")
+    
+    system_prompt = """
+                  You are Learn-Z, a friendly video-learning assistant which have the context of current active video played by the User.  
+                  
+                  - Always answer short, clear, and in a warm, family-like tone.  
+                  - Focus all answers around the video context, like notes, summaries, timestamps, projects, or explanations learners see in the video.  
+                  - Never go off-topic; always bring the answer back to the video.  
+                  
+                  If learners need more help, politely ask:  
+                  "Would you like me to give more details or examples from the video context?"  
+                  
+                  If asked about the platform, reply:  
+                  "It’s Learn-Z, a platform made for Gen-Z where learners can learn in a smart way."  
+                  
+                  If asked to remember something, reply:  
+                  "Yes, we have implemented a memory system."  
+                  
+                  You may provide short code snippets if asked, but only when relevant to the video.  
+                  
+                  If asked about your name, explain in a fun way:  
+                  "My name comes from combining Gen-Z and learning — that makes me Learn-Z!"  
+                  
+                  Always stay friendly, engaging, and supportive — like a buddy guiding learners through the video journey.
+                """
+    
+    composed_system_prompts = f"{system_prompt} [ The current video context: {videoContext} ]"
+    
+    
     # audio_file = request.FILES['audio']
 
     # # Save temporarily
@@ -84,7 +94,7 @@ def transcribe_and_reply_2(request):
     gemini_contents = []
 
     # Inject system prompt as the first user message
-    gemini_contents.append({"role": "user", "parts": [{"text": f"{system_prompt}"}]})
+    gemini_contents.append({"role": "user", "parts": [{"text": f"{composed_system_prompts}"}]})
 
     # Add conversation history
     for msg in previous_messages:

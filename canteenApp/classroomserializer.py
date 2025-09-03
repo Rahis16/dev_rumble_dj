@@ -7,7 +7,7 @@ from .youtubevideoserializer import CourseVideoSerializer  # or a mini version
 class CourseVideoMiniSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseVideo
-        fields = ("id", "title", "slug", "category", "youtube_url", "youtube_id")
+        fields = ("id", "title", "slug", "category", "youtube_url", "youtube_id", "notes")
 
 class ClassroomItemSerializer(serializers.ModelSerializer):
     video = CourseVideoMiniSerializer(read_only=True)

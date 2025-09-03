@@ -178,6 +178,9 @@ class CourseVideo(models.Model):
 
     # Generic keywords to catch free-form matches (title/desc synonyms, etc.)
     keywords = models.ManyToManyField(VideoKeyword, blank=True, related_name="videos")
+    
+    #note of the video
+    notes = models.TextField(blank=True, default="Video Note!")
 
     # Meta
     created_at = models.DateTimeField(auto_now_add=True)
@@ -404,7 +407,7 @@ class ClassroomItem(models.Model):
     added_at = models.DateTimeField(auto_now_add=True)
 
     # Optional learning state
-    note = models.CharField(max_length=255, blank=True, default="")
+    note = models.TextField(default="Video Note!")
     progress_seconds = models.PositiveIntegerField(default=0)
     completed = models.BooleanField(default=False)
     last_watched_at = models.DateTimeField(null=True, blank=True)

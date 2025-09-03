@@ -130,3 +130,39 @@ class CourseVideoAdmin(admin.ModelAdmin):
     search_fields = ("title", "description", "youtube_url", "youtube_id")
     prepopulated_fields = {"slug": ("title",)}
     filter_horizontal = ("fields", "interests", "skills", "keywords")
+# Complete profile admin
+
+
+@admin.register(Field)
+class FieldAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug")
+    search_fields = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(Interest2)
+class InterestAdmin(admin.ModelAdmin):
+    list_display = ("name", "field")
+    list_filter = ("field",)
+    search_fields = ("name",)
+
+
+@admin.register(Skill2)
+class SkillAdmin(admin.ModelAdmin):
+    list_display = ("name", "field")
+    list_filter = ("field",)
+    search_fields = ("name",)
+
+
+@admin.register(UserInterest)
+class UserInterestAdmin(admin.ModelAdmin):
+    list_display = ("user", "interest")
+    list_filter = ("interest__field",)
+    search_fields = ("user__username", "interest__name")
+
+
+@admin.register(UserSkill)
+class UserSkillAdmin(admin.ModelAdmin):
+    list_display = ("user", "skill", "level")
+    list_filter = ("level", "skill__field")
+    search_fields = ("user__username", "skill__name")

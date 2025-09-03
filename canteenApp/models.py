@@ -363,3 +363,86 @@ class ChatMessageAi(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:50]}"
+
+
+
+# classroom models
+# videos/models_classroom.py
+
+class Classroom(models.Model):
+    """
+    Exactly one classroom per user.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="classroom",
+    )
+    name = models.CharField(max_length=120, default="My AI Classroom")
+    active_video = models.ForeignKey(
+        CourseVideo, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user} — {self.name}"
+
+
+class ClassroomItem(models.Model):
+    """
+    Videos saved into the user's single classroom.
+    """
+    classroom = models.ForeignKey(
+        Classroom, on_delete=models.CASCADE, related_name="items"
+    )
+    video = models.ForeignKey(
+        CourseVideo, on_delete=models.CASCADE, related_name="classroom_items"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    # Optional learning state
+    note = models.CharField(max_length=255, blank=True, default="")
+    progress_seconds = models.PositiveIntegerField(default=0)
+    completed = models.BooleanField(default=False)
+    last_watched_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("classroom", "video")
+        ordering = ["-added_at"]
+
+    def __str__(self):
+        return f"{self.classroom} → {self.video}"
+
+
+class VideoContext(models.Model):
+    """
+    One context per video (time-coded outline).
+    """
+    video = models.OneToOneField(
+        CourseVideo, on_delete=models.CASCADE, related_name="context"
+    )
+    summary = models.TextField(blank=True, default="")
+    keywords = models.JSONField(blank=True, default=list)
+
+    def __str__(self):
+        return f"Context for {self.video.title}"
+
+
+class VideoContextSegment(models.Model):
+    context = models.ForeignKey(
+        VideoContext, on_delete=models.CASCADE, related_name="segments"
+    )
+    start_seconds = models.PositiveIntegerField()
+    end_seconds = models.PositiveIntegerField()
+    title = models.CharField(max_length=200, blank=True, default="")
+    content = models.TextField()
+    tags = models.JSONField(blank=True, default=list)
+
+    class Meta:
+        ordering = ["start_seconds"]
+
+    def __str__(self):
+        return f"{self.context.video.title} [{self.start_seconds}-{self.end_seconds}]"

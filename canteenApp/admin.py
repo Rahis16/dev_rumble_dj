@@ -166,3 +166,36 @@ class UserSkillAdmin(admin.ModelAdmin):
     list_display = ("user", "skill", "level")
     list_filter = ("level", "skill__field")
     search_fields = ("user__username", "skill__name")
+
+
+#classroom admin
+# videos/admin_classroom.py
+
+class ClassroomItemInline(admin.TabularInline):
+    model = ClassroomItem
+    extra = 0
+    autocomplete_fields = ("video",)
+    readonly_fields = ("added_at", "last_watched_at")
+
+@admin.register(Classroom)
+class ClassroomAdmin(admin.ModelAdmin):
+    list_display = ("user", "name", "active_video", "created_at")
+    search_fields = ("user__username", "name", "active_video__title")
+    inlines = [ClassroomItemInline]
+
+class VideoContextSegmentInline(admin.TabularInline):
+    model = VideoContextSegment
+    extra = 1
+
+@admin.register(VideoContext)
+class VideoContextAdmin(admin.ModelAdmin):
+    list_display = ("video",)
+    search_fields = ("video__title",)
+    inlines = [VideoContextSegmentInline]
+
+@admin.register(ClassroomItem)
+class ClassroomItemAdmin(admin.ModelAdmin):
+    list_display = ("classroom", "video", "progress_seconds", "completed", "added_at")
+    search_fields = ("classroom__user__username", "video__title")
+    list_filter = ("completed", "added_at")
+    autocomplete_fields = ("classroom", "video")

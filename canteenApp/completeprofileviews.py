@@ -88,7 +88,7 @@ class SaveSkillsInterestsView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         data = serializer.save()  # returns normalized selection
-        return Response(data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class GetMySelectionView(APIView):

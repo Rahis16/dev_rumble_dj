@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.conf import settings
+from urllib.parse import urlparse, parse_qs
 
 
 class Field(models.Model):
@@ -148,6 +149,90 @@ class UserSkill(models.Model):
 
 
 # completet profile model completed here---------------------------------------
+
+
+class VideoKeyword(models.Model):
+    name = models.CharField(max_length=60, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def _str_(self):
+        return self.name
+
+
+class CourseVideo(models.Model):
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=240, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=80, db_index=True)
+    youtube_url = models.URLField()
+    youtube_id = models.CharField(max_length=32, blank=True, db_index=True)
+
+    # Link to your profile taxonomy for accurate matching
+    fields = models.ManyToManyField(Field, blank=True, related_name="course_videos")
+    interests = models.ManyToManyField(
+        Interest2, blank=True, related_name="course_videos"
+    )
+    skills = models.ManyToManyField(Skill2, blank=True, related_name="course_videos")
+
+    # Generic keywords to catch free-form matches (title/desc synonyms, etc.)
+    keywords = models.ManyToManyField(VideoKeyword, blank=True, related_name="videos")
+
+    # Meta
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_published = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["category"]),
+            models.Index(fields=["youtube_id"]),
+        ]
+
+    def _str_(self):
+        return self.title
+
+    def extract_youtube_id(self) -> str:
+        """
+        Supports:
+        - https://youtu.be/VIDEOID
+        - https://www.youtube.com/watch?v=VIDEOID
+        - https://www.youtube.com/embed/VIDEOID
+        - https://www.youtube.com/shorts/VIDEOID
+        Falls back to last path segment if no v query.
+        """
+        try:
+            u = urlparse(self.youtube_url)
+            host = (u.hostname or "").lower()
+            if host == "youtu.be":
+                return (u.path or "/").strip("/")
+
+            if "youtube.com" in host:
+                qs_v = parse_qs(u.query).get("v", [None])[0]
+                if qs_v:
+                    return qs_v
+                parts = [p for p in (u.path or "").split("/") if p]
+                for tag in ("embed", "shorts"):
+                    if tag in parts:
+                        i = parts.index(tag)
+                        if i + 1 < len(parts):
+                            return parts[i + 1]
+                if parts:
+                    return parts[-1]
+        except Exception:
+            pass
+        return ""  # store blank if unknown
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)[:240]
+        # keep youtube_id in sync
+        self.youtube_id = self.extract_youtube_id()
+        super().save(*args, **kwargs)
+
+
+# youtube video model ended-------------------------------------------------
 
 
 # peer finder section

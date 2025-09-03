@@ -39,7 +39,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
     photo_preview.allow_tags = True
     photo_preview.short_description = "Photo Preview"
-    
+
 
 @admin.register(FriendRequest)
 class FriendRequestAdmin(admin.ModelAdmin):
@@ -111,3 +111,22 @@ class ChatMessageAiAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
     readonly_fields = ("created_at",)
+
+
+# youtube video admin ----------------
+# videos/admin.py
+
+
+@admin.register(VideoKeyword)
+class VideoKeywordAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+@admin.register(CourseVideo)
+class CourseVideoAdmin(admin.ModelAdmin):
+    list_display = ("title", "category", "is_published", "created_at")
+    list_filter = ("is_published", "category", "created_at", "fields")
+    search_fields = ("title", "description", "youtube_url", "youtube_id")
+    prepopulated_fields = {"slug": ("title",)}
+    filter_horizontal = ("fields", "interests", "skills", "keywords")

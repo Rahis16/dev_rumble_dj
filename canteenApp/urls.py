@@ -14,6 +14,12 @@ from .completeprofileviews import (
     GetMySelectionView,
 )
 
+from .youtubevideoviews import (
+    CourseVideoListCreateView,
+    CourseVideoDetailView,
+    RecommendedVideosView,
+)
+
 
 urlpatterns = [
     path("", views.home, name="home"),
@@ -79,8 +85,6 @@ urlpatterns = [
     # create team
     path("teams/create/", TeamCreateAPIView.as_view(), name="team-create"),
     path("teams/<int:pk>/delete/", TeamDeleteAPIView.as_view(), name="team-delete"),
-    
-    
     # Catalog of recommendation at initial profile creation
     path("api/catalog/fields/", FieldListView.as_view(), name="catalog-fields"),
     path(
@@ -100,4 +104,10 @@ urlpatterns = [
         name="save-skills-interests",
     ),
     path("api/my-selection/", GetMySelectionView.as_view(), name="get-my-selection"),
+    # youtube video urls
+    path("videos/", CourseVideoListCreateView.as_view(), name="video-list-create"),
+    path("videos/<slug:slug>/", CourseVideoDetailView.as_view(), name="video-detail"),
+    path(
+        "videos/recommended/", RecommendedVideosView.as_view(), name="video-recommended"
+    ),
 ]

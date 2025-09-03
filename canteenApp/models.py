@@ -12,7 +12,7 @@ class Field(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def _str_(self):
+    def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class Interest2(models.Model):
         unique_together = ("name", "field")
         ordering = ["name"]
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.name} ({self.field.name})"
 
 
@@ -96,7 +96,7 @@ class Skill2(models.Model):
         unique_together = ("name", "field")
         ordering = ["name"]
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.name} ({self.field.name})"
 
 
@@ -157,7 +157,7 @@ class VideoKeyword(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def _str_(self):
+    def __str__(self):
         return self.name
 
 
@@ -190,7 +190,7 @@ class CourseVideo(models.Model):
             models.Index(fields=["youtube_id"]),
         ]
 
-    def _str_(self):
+    def __str__(self):
         return self.title
 
     def extract_youtube_id(self) -> str:

@@ -105,9 +105,10 @@ urlpatterns = [
     ),
     path("api/my-selection/", GetMySelectionView.as_view(), name="get-my-selection"),
     # youtube video urls
-    path("api/videos/", CourseVideoListCreateView.as_view(), name="video-list-create"),
-    path("api/videos/<slug:slug>/", CourseVideoDetailView.as_view(), name="video-detail"),
     path(
         "api/videos/recommended/", RecommendedVideosView.as_view(), name="video-recommended"
     ),
+    path("api/videos/", CourseVideoListCreateView.as_view(), name="video-list-create"),
+    path("api/videos/<slug:slug>/", CourseVideoDetailView.as_view(), name="video-detail"),
+    
 ]

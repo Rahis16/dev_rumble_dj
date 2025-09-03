@@ -23,7 +23,7 @@ HF_API_KEY = "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"  # Hugging Face token yaha 
 # ELEVENLABS_VOICE_ID = "jqcCZkN6Knx8BJ5TBdYR"
 
 # ELEVENLABS_API_KEY = "sk_2f9e2766fb9de3f32437d8ce34bd80629ae1ec536a939248"
-ELEVENLABS_API_KEY = "sk_2f9e2766fb9de3f32437d8ce34bd80629ae1ec536a939248"
+ELEVENLABS_API_KEY = "sk_d2045f1e1719e9bc4d97c842af2287fe0a1c4aa499312738"
 ELEVENLABS_VOICE_ID = "jqcCZkN6Knx8BJ5TBdYR"
 
 
@@ -51,8 +51,8 @@ def transcribe_and_reply_2(request):
     
     If asked about your name, explain it in a fun and engaging way:
     "My name comes from combining Gen-Z and learning — that makes me Learn-Z!"
-    
-    Always answer in a friendly, family-like tone."""
+
+    Always answer in a friendly, family-like tone.  you are also a best biologist as well as bio topper with core logics"""
 
     message = request.data.get("text", "")
     # audio_file = request.FILES['audio']
